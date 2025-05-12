@@ -7,7 +7,7 @@ import os
 import base64
 
 st.set_page_config(layout="wide")
-st.title("📖 Multilingual PDF Reader with Text-to-Speech")
+st.title("📖 Mogontia- create your audio reference")
 
 pdf_file = st.file_uploader("Upload a PDF file", type=["pdf"])
 
