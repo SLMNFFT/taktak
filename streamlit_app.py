@@ -7,6 +7,7 @@ import pyttsx3
 import tempfile
 import os
 import time
+import wave
 import requests
 
 from langchain_community.llms import Ollama
@@ -56,6 +57,30 @@ def fetch_pdf_from_url(url):
         st.error(f"❌ Error fetching PDF from URL: {e}")
         return None
 
+# Split text into chunks
+def split_text(text, max_length=500):
+    paragraphs = text.split('\n')
+    chunks = []
+    current_chunk = ""
+    for para in paragraphs:
+        if len(current_chunk) + len(para) < max_length:
+            current_chunk += para + " "
+        else:
+            chunks.append(current_chunk.strip())
+            current_chunk = para + " "
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+    return chunks
+
+# Concatenate audio chunks
+def concatenate_audio(files, output_path):
+    with wave.open(output_path, 'wb') as output:
+        with wave.open(files[0], 'rb') as first:
+            output.setparams(first.getparams())
+        for file in files:
+            with wave.open(file, 'rb') as f:
+                output.writeframes(f.readframes(f.getnframes()))
+
 # Determine PDF content based on input
 if pdf_file:
     pdf_bytes = pdf_file.read()
@@ -68,30 +93,24 @@ if pdf_bytes:
     reader = PyPDF2.PdfReader(BytesIO(pdf_bytes))
     total_pages = len(reader.pages)
 
-    # Create two columns for layout
-    col1, col2 = st.columns([1, 2])  # First column for the PDF viewer, second for the rest of the content
+    col1, col2 = st.columns([1, 2])
 
-    # Display PDF viewer in the left column (fixed height with scroll)
     with col1:
-        pdf_viewer(input=pdf_bytes, height=600)  # Set the height to your preference
+        pdf_viewer(input=pdf_bytes, height=600)
 
-    # Display other content (text, language detection, etc.) in the right column
     with col2:
-        # Select multiple pages
         page_numbers = st.multiselect("Select pages to read", list(range(1, total_pages + 1)), default=[1])
         
-        # Combine text from the selected pages
         page_texts = ""
         for page_num in page_numbers:
             page_text = reader.pages[page_num - 1].extract_text()
             if page_text:
-                page_texts += page_text + "\n\n"  # Add space between pages
+                page_texts += page_text + "\n\n"
         
         if page_texts.strip():
             st.subheader("📖 Combined Text from Selected Pages")
             st.text_area("Text", page_texts, height=300)
 
-            # Language detection
             try:
                 detected_lang = detect(page_texts)
                 st.info(f"🌐 Detected Language: **{detected_lang.upper()}**")
@@ -99,34 +118,31 @@ if pdf_bytes:
                 detected_lang = "en"
                 st.warning("⚠️ Language detection failed. Defaulting to English.")
 
-            # Read aloud
-            # ...existing code...
             if st.button("🔊 Read Selected Pages Aloud"):
                 try:
-                    combined_text = "\n\n".join([p.strip() for p in page_texts.split('\n') if p.strip()])
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
-                        audio_path = tmp_file.name
-
-                    engine.save_to_file(combined_text, audio_path)
+                    text_chunks = split_text(page_texts, max_length=500)
+                    temp_files = []
+                    for i, chunk in enumerate(text_chunks):
+                        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+                        temp_files.append(temp_file.name)
+                        engine.save_to_file(chunk, temp_file.name)
+                    
                     engine.runAndWait()
 
-                    waited = 0
-                    while (not os.path.exists(audio_path) or os.path.getsize(audio_path) == 0) and waited < 5:
-                        time.sleep(0.2)
-                        waited += 0.2
+                    final_audio = tempfile.NamedTemporaryFile(delete=False, suffix=".wav").name
+                    concatenate_audio(temp_files, final_audio)
 
-                    if os.path.exists(audio_path) and os.path.getsize(audio_path) > 0:
-                        with open(audio_path, 'rb') as f:
-                            st.audio(f.read(), format="audio/wav")
-                    else:
-                       st.error("❌ Audio file was not created.")
+                    with open(final_audio, 'rb') as f:
+                        st.audio(f.read(), format="audio/wav")
+
+                    for f_path in temp_files:
+                        os.remove(f_path)
+                    os.remove(final_audio)
+
                 except Exception as e:
                     st.error(f"❌ Speech synthesis failed: {e}")
 
-# ...existing code...
-
-            # Ollama Q&A
-            if st.checkbox("💬 Ask a question about the selected pages"):
+            if st.checkbox("💬 Ask a question about the selected pages (Ollama)"):
                 question = st.text_input("Ask your question:")
                 if question:
                     with st.spinner("Thinking..."):
