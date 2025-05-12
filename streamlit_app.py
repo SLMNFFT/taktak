@@ -1,129 +1,70 @@
 import streamlit as st
-import PyPDF2
+from PyPDF2 import PdfReader
 from langdetect import detect
-from streamlit_pdf_viewer import pdf_viewer
-from io import BytesIO
-import pyttsx3
+from gtts import gTTS
 import tempfile
 import os
-import time
-import requests
 
-from langchain_community.llms import Ollama
-from langchain.chains.question_answering import load_qa_chain
-from langchain.docstore.document import Document
+# Title
+st.title("📖 Multilingual PDF Reader with Text-to-Speech")
 
-# Page setup
-st.set_page_config(page_title="TakTak", layout="wide")
-st.title("📄 TakTak PDF Reader with Multilingual Audio Assistance")
+# Upload PDF
+pdf_file = st.file_uploader("Upload a PDF file", type=["pdf"])
 
-# Initialize TTS engine
-engine = pyttsx3.init()
-
-# Get available voices
-voices = engine.getProperty('voices')
-voice_options = {
-    f"{v.name} ({v.languages[0] if v.languages else 'unknown'})": v.id
-    for v in voices
-}
-default_voice = list(voice_options.keys())[0]
-
-# Sidebar TTS settings
-st.sidebar.header("🎙️ Speech Settings")
-selected_voice = st.sidebar.selectbox("Choose Voice", options=list(voice_options.keys()), index=0)
-rate = st.sidebar.slider("Speech Rate", 100, 300, 150)
-volume = st.sidebar.slider("Volume", 0.0, 1.0, 1.0)
-
-# Apply selected voice settings
-engine.setProperty('rate', rate)
-engine.setProperty('volume', volume)
-engine.setProperty('voice', voice_options[selected_voice])
-
-# Upload or fetch PDF
-pdf_file = st.file_uploader("📤 Upload your PDF", type=["pdf"])
-pdf_url = st.text_input("🌐 Or, enter a PDF URL")
-
-def fetch_pdf_from_url(url):
-    try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            return response.content
-        else:
-            st.error("❌ Failed to download PDF from URL.")
-            return None
-    except Exception as e:
-        st.error(f"❌ Error fetching PDF from URL: {e}")
-        return None
-
-# Read PDF
 if pdf_file:
-    pdf_bytes = pdf_file.read()
-elif pdf_url:
-    pdf_bytes = fetch_pdf_from_url(pdf_url)
-else:
-    pdf_bytes = None
+    pdf_reader = PdfReader(pdf_file)
+    total_pages = len(pdf_reader.pages)
 
-if pdf_bytes:
-    try:
-        reader = PyPDF2.PdfReader(BytesIO(pdf_bytes))
-        total_pages = len(reader.pages)
+    st.sidebar.header("📄 Page Selection")
+    page_numbers = st.sidebar.multiselect(
+        "Select pages to read aloud",
+        options=list(range(1, total_pages + 1)),
+        default=[1],
+    )
 
-        col1, col2 = st.columns([1, 2])
+    if page_numbers:
+        full_text = ""
+        for i in page_numbers:
+            page = pdf_reader.pages[i - 1]
+            text = page.extract_text()
+            if text:
+                full_text += text + "\n"
 
-        with col1:
-            pdf_viewer(input=pdf_bytes, height=600)
+        st.subheader("📝 Extracted Text")
+        st.write(full_text)
 
-        with col2:
-            page_numbers = st.multiselect("📑 Select pages to read", list(range(1, total_pages + 1)), default=[1])
+        # Detect language
+        try:
+            detected_lang = detect(full_text)
+            st.success(f"🌍 Detected Language: `{detected_lang}`")
+        except Exception as e:
+            st.warning(f"Language detection failed: {e}")
+            detected_lang = "en"
 
-            page_texts = ""
-            for page_num in page_numbers:
-                page_text = reader.pages[page_num - 1].extract_text()
-                if page_text:
-                    page_texts += page_text + "\n\n"
+        # Voice and speed controls
+        st.sidebar.header("🔈 TTS Options")
+        slow = st.sidebar.checkbox("Slow Speed", value=False)
 
-            if page_texts.strip():
-                st.subheader("📖 Combined Text from Selected Pages")
-                st.text_area("Text", page_texts, height=300)
+        # Language options override (optional)
+        lang_override = st.sidebar.text_input(
+            "Override Language Code (optional)", value=detected_lang
+        )
+        selected_lang = lang_override.strip() if lang_override else detected_lang
 
-                try:
-                    detected_lang = detect(page_texts)
-                    st.info(f"🌐 Detected Language: **{detected_lang.upper()}**")
-                except Exception:
-                    detected_lang = "en"
-                    st.warning("⚠️ Language detection failed. Defaulting to English.")
-
-                if st.button("🔊 Read Selected Pages Aloud"):
-                    try:
-                        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
-                            audio_path = tmp_file.name
-                        engine.save_to_file(page_texts, audio_path)
-                        engine.runAndWait()
-                        time.sleep(1)
-
-                        if os.path.exists(audio_path):
-                            with open(audio_path, 'rb') as f:
-                                st.audio(f.read(), format="audio/wav")
-                        else:
-                            st.error("❌ Audio file was not created.")
-                    except Exception as e:
-                        st.error(f"❌ Speech synthesis failed: {e}")
-
-                if st.checkbox("💬 Ask a question about the selected pages (Ollama)"):
-                    question = st.text_input("Ask your question:")
-                    if question:
-                        with st.spinner("Thinking..."):
-                            try:
-                                llm = Ollama(model="llama3")
-                                chain = load_qa_chain(llm, chain_type="stuff")
-                                docs = [Document(page_content=page_texts)]
-                                answer = chain.run(input_documents=docs, question=question)
-                                st.success(answer)
-                            except Exception as e:
-                                st.error(f"❌ Ollama Error: {e}")
-            else:
-                st.warning("⚠️ No text found in the selected pages.")
-    except Exception as e:
-        st.error(f"❌ Failed to read PDF: {e}")
-else:
-    st.info("📂 Please upload a PDF file or enter a URL to begin.")
+        if st.button("🔊 Read Selected Pages Aloud"):
+            try:
+                tts = gTTS(text=full_text, lang=selected_lang, slow=slow)
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
+                    tts.save(fp.name)
+                    st.audio(fp.name, format="audio/mp3")
+                    with open(fp.name, "rb") as audio_file:
+                        st.download_button(
+                            label="💾 Download Audio",
+                            data=audio_file,
+                            file_name="tts_output.mp3",
+                            mime="audio/mp3",
+                        )
+            except Exception as e:
+                st.error(f"❌ TTS failed: {e}")
+    else:
+        st.info("Please select at least one page.")
