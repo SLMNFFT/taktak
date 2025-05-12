@@ -41,7 +41,14 @@ if pdf_file:
                     full_text += text + "\n"
 
             st.subheader("📝 Extracted Text")
-            st.write(full_text)
+
+            st.markdown(
+                f"""
+                <div style="height: 800px; overflow-y: auto; padding: 1rem; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 5px;">
+                    <pre style="white-space: pre-wrap;">{full_text}</pre>
+                </div>
+                """,
+    unsafe_allow_html=True
 
             try:
                 detected_lang = detect(full_text)
