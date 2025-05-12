@@ -9,18 +9,20 @@ import base64
 st.set_page_config(layout="wide")
 st.title("📖 Mogontia- create your audio reference")
 
+
 pdf_file = st.file_uploader("Upload a PDF file", type=["pdf"])
 
 if pdf_file:
-    # Save uploaded PDF temporarily
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
-        tmp_pdf.write(pdf_file.read())
-        tmp_pdf_path = tmp_pdf.name
+    # Save uploaded file temporarily
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(pdf_file.read())
+        tmp_path = tmp.name
 
+    # Left column: TTS features
     col1, col2 = st.columns([2, 3])
 
     with col1:
-        pdf_reader = PdfReader(tmp_pdf_path)
+        pdf_reader = PdfReader(tmp_path)
         total_pages = len(pdf_reader.pages)
 
         st.sidebar.header("📄 Page Selection")
@@ -74,17 +76,27 @@ if pdf_file:
         else:
             st.info("Please select at least one page.")
 
+    # Right column: Scrollable PDF viewer
     with col2:
         st.subheader("👁️ Scrollable PDF Preview")
 
-        with open(tmp_pdf_path, "rb") as f:
-            base64_pdf = base64.b64encode(f.read()).decode("utf-8")
+        with open(tmp_path, "rb") as f:
+            base64_pdf = base64.b64encode(f.read()).decode('utf-8')
 
-        # Fixed height with scrollable container
-        pdf_display = f"""
-        <div style="height:800px; overflow-y:auto; border:1px solid #ccc; padding:5px;">
-            <iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="1200px" style="border:none;"></iframe>
-        </div>
+        pdf_viewer_html = f"""
+            <iframe
+                src="data:application/pdf;base64,{base64_pdf}"
+                width="100%"
+                height="800px"
+                style="border:1px solid #ccc;"
+            ></iframe>
         """
 
-        st.components.v1.html(pdf_display, height=820, scrolling=False)
+        st.markdown(
+            f"""
+            <div style="overflow-y: auto; height: 820px;">
+                {pdf_viewer_html}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
