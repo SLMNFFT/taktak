@@ -4,21 +4,15 @@ from langdetect import detect
 from gtts import gTTS
 import tempfile
 import os
-
-# Optional: Install component for PDF preview
-try:
-    from streamlit_pdf_viewer import pdf_viewer
-except ImportError:
-    st.warning("streamlit-pdf-viewer not installed. Run: pip install streamlit-pdf-viewer")
+import base64
 
 st.set_page_config(layout="wide")
-
 st.title("📖 Multilingual PDF Reader with Text-to-Speech")
 
 pdf_file = st.file_uploader("Upload a PDF file", type=["pdf"])
 
 if pdf_file:
-    # Save to a temporary file
+    # Save uploaded PDF temporarily
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
         tmp_pdf.write(pdf_file.read())
         tmp_pdf_path = tmp_pdf.name
@@ -82,4 +76,16 @@ if pdf_file:
 
     with col2:
         st.subheader("👁️ PDF Preview")
-        pdf_viewer(tmp_pdf_path)
+
+        # Encode PDF to base64 for embedding
+        with open(tmp_pdf_path, "rb") as f:
+            base64_pdf = base64.b64encode(f.read()).decode("utf-8")
+
+        # Adjust iframe height based on number of pages (rough estimate: 1200px per 5 pages)
+        height = 1200 * (total_pages / 5)
+        height = int(min(height, 3000))  # Set a max height to avoid absurdly tall frames
+
+        pdf_display = f"""
+        <iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="{height}px" type="application/pdf"></iframe>
+        """
+        st.components.v1.html(pdf_display, height=height + 20, scrolling=False)
