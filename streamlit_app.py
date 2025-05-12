@@ -100,28 +100,33 @@ if pdf_bytes:
                 st.warning("⚠️ Language detection failed. Defaulting to English.")
 
             # Read aloud
+            # ...existing code...
             if st.button("🔊 Read Selected Pages Aloud"):
                 try:
-                    # Text bereinigen: Mehrfache Zeilenumbrüche reduzieren
-                    clean_text = " ".join(page_texts.split())
-
+                    # Text in Absätze aufteilen
+                    paragraphs = [p.strip() for p in page_texts.split('\n') if p.strip()]
                     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
                         audio_path = tmp_file.name
 
-                    engine.save_to_file(clean_text, audio_path)
-                    engine.runAndWait()
+        # Jeden Absatz einzeln an die Engine übergeben
+                    for para in paragraphs:
+                        engine.save_to_file(para, audio_path)
+                        engine.runAndWait()
 
+                    # Sicherstellen, dass die Datei existiert und nicht leer ist
                     waited = 0
                     while (not os.path.exists(audio_path) or os.path.getsize(audio_path) == 0) and waited < 5:
                         time.sleep(0.2)
                         waited += 0.2
 
                     if os.path.exists(audio_path) and os.path.getsize(audio_path) > 0:
-                        st.audio(audio_path, format="audio/wav")
+                        with open(audio_path, 'rb') as f:
+                            st.audio(f.read(), format="audio/wav")
                     else:
                         st.error("❌ Audio file was not created.")
                 except Exception as e:
                     st.error(f"❌ Speech synthesis failed: {e}")
+# ...existing code...
 
             # Ollama Q&A
             if st.checkbox("💬 Ask a question about the selected pages (Ollama)"):
