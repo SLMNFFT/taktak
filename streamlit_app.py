@@ -7,9 +7,9 @@ import os
 import base64
 
 st.set_page_config(layout="wide")
-st.title("📖 Mogontia- create your audio reference")
+st.title("📖 Mogontia - Create Your Audio Reference")
 
-
+# Upload PDF
 pdf_file = st.file_uploader("Upload a PDF file", type=["pdf"])
 
 if pdf_file:
@@ -42,16 +42,16 @@ if pdf_file:
 
             st.subheader("📝 Extracted Text")
 
-st.markdown(
-    f"""
-    <div style="height: 800px; overflow-y: auto; padding: 1rem; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 5px;">
-        <pre style="white-space: pre-wrap; color: black;">{full_text}</pre>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+            st.markdown(
+                f"""
+                <div style="height: 800px; overflow-y: auto; padding: 1rem; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 5px;">
+                    <pre style="white-space: pre-wrap; color: black;">{full_text}</pre>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-
+            # Detect language
             try:
                 detected_lang = detect(full_text)
                 st.success(f"🌍 Detected Language: `{detected_lang}`")
@@ -59,6 +59,7 @@ st.markdown(
                 st.warning(f"Language detection failed: {e}")
                 detected_lang = "en"
 
+            # TTS Options
             st.sidebar.header("🔈 TTS Options")
             slow = st.sidebar.checkbox("Slow Speed", value=False)
 
