@@ -1,13 +1,5 @@
 streamlit==1.38.0
 PyPDF2==3.0.1
+gTTS==2.3.2
 langdetect==1.0.9
-streamlit-pdf-viewer==0.0.4
-pyttsx3==2.90
-gTTS==2.5.1
-requests==2.31.0
-langchain==0.1.14
-langchain-community==0.0.32
-ollama==0.1.9
-pydub==0.25.1
-ffmpeg-python==0.2.0  # Install ffmpeg bindings for Python
 
