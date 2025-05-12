@@ -6,3 +6,4 @@ requests
 streamlit-pdf-viewer
 langchain
 langchain-community
+altair
