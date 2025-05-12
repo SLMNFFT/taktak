@@ -102,18 +102,20 @@ if pdf_bytes:
             # Read aloud
             if st.button("🔊 Read Selected Pages Aloud"):
                 try:
+                    # Text bereinigen: Mehrfache Zeilenumbrüche reduzieren
+                    clean_text = " ".join(page_texts.split())
+
                     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
                         audio_path = tmp_file.name
 
-                    engine.save_to_file(page_texts, audio_path)
+                    engine.save_to_file(clean_text, audio_path)
                     engine.runAndWait()
 
-                    # Sicherstellen, dass die Datei existiert und nicht leer ist
                     waited = 0
                     while (not os.path.exists(audio_path) or os.path.getsize(audio_path) == 0) and waited < 5:
                         time.sleep(0.2)
                         waited += 0.2
-            
+
                     if os.path.exists(audio_path) and os.path.getsize(audio_path) > 0:
                         st.audio(audio_path, format="audio/wav")
                     else:
