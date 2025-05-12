@@ -108,15 +108,14 @@ if pdf_bytes:
                     engine.save_to_file(page_texts, audio_path)
                     engine.runAndWait()
 
-                    # Warte, bis die Datei existiert und nicht leer ist (max. 5 Sekunden)
+                    # Sicherstellen, dass die Datei existiert und nicht leer ist
                     waited = 0
                     while (not os.path.exists(audio_path) or os.path.getsize(audio_path) == 0) and waited < 5:
                         time.sleep(0.2)
                         waited += 0.2
-
+            
                     if os.path.exists(audio_path) and os.path.getsize(audio_path) > 0:
-                        with open(audio_path, 'rb') as f:
-                            st.audio(f.read(), format="audio/wav")
+                        st.audio(audio_path, format="audio/wav")
                     else:
                         st.error("❌ Audio file was not created.")
                 except Exception as e:
