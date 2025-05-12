@@ -126,7 +126,7 @@ if pdf_bytes:
 # ...existing code...
 
             # Ollama Q&A
-            if st.checkbox("💬 Ask a question about the selected pages (Ollama)"):
+            if st.checkbox("💬 Ask a question about the selected pages"):
                 question = st.text_input("Ask your question:")
                 if question:
                     with st.spinner("Thinking..."):
