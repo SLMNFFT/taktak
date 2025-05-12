@@ -75,17 +75,16 @@ if pdf_file:
             st.info("Please select at least one page.")
 
     with col2:
-        st.subheader("👁️ PDF Preview")
+        st.subheader("👁️ Scrollable PDF Preview")
 
-        # Encode PDF to base64 for embedding
         with open(tmp_pdf_path, "rb") as f:
             base64_pdf = base64.b64encode(f.read()).decode("utf-8")
 
-        # Adjust iframe height based on number of pages (rough estimate: 1200px per 5 pages)
-        height = 1200 * (total_pages / 5)
-        height = int(min(height, 3000))  # Set a max height to avoid absurdly tall frames
-
+        # Fixed height with scrollable container
         pdf_display = f"""
-        <iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="{height}px" type="application/pdf"></iframe>
+        <div style="height:800px; overflow-y:auto; border:1px solid #ccc; padding:5px;">
+            <iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="1200px" style="border:none;"></iframe>
+        </div>
         """
-        st.components.v1.html(pdf_display, height=height + 20, scrolling=False)
+
+        st.components.v1.html(pdf_display, height=820, scrolling=False)
