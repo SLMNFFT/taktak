@@ -7,3 +7,4 @@ streamlit-pdf-viewer
 langchain
 langchain-community
 altair
+altair.vegalite.v4
