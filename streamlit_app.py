@@ -18,10 +18,15 @@ st.title("📖 Multilingual PDF Reader with Text-to-Speech")
 pdf_file = st.file_uploader("Upload a PDF file", type=["pdf"])
 
 if pdf_file:
+    # Save to a temporary file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
+        tmp_pdf.write(pdf_file.read())
+        tmp_pdf_path = tmp_pdf.name
+
     col1, col2 = st.columns([2, 3])
 
     with col1:
-        pdf_reader = PdfReader(pdf_file)
+        pdf_reader = PdfReader(tmp_pdf_path)
         total_pages = len(pdf_reader.pages)
 
         st.sidebar.header("📄 Page Selection")
@@ -77,4 +82,4 @@ if pdf_file:
 
     with col2:
         st.subheader("👁️ PDF Preview")
-        pdf_viewer(pdf_file)
+        pdf_viewer(tmp_pdf_path)
