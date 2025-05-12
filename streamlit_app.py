@@ -2,106 +2,69 @@ import streamlit as st
 from PyPDF2 import PdfReader
 from langdetect import detect
 from gtts import gTTS
-from io import BytesIO
 import tempfile
 import os
-import requests
-from streamlit_pdf_viewer import pdf_viewer
-from langchain_community.llms import Ollama
-from langchain.chains.question_answering import load_qa_chain
-from langchain.docstore.document import Document
 
-st.set_page_config(page_title="TakTak", layout="wide")
-st.title("📄 TakTaK PDF Reader with Multilingual Audio Assistance")
+# Title
+st.title("📖 Multilingual PDF Reader with Text-to-Speech")
 
-# Sidebar
-st.sidebar.header("🔈 Audio Settings")
-speech_lang = st.sidebar.text_input("Language code (e.g. en, fr, de, ar)", value="en")
-slow = st.sidebar.checkbox("Speak Slowly?", value=False)
+# Upload PDF
+pdf_file = st.file_uploader("Upload a PDF file", type=["pdf"])
 
-# Upload or URL input
-pdf_file = st.file_uploader("Upload a PDF", type=["pdf"])
-pdf_url = st.text_input("Or enter a PDF URL")
-
-# Load PDF
-def load_pdf(pdf_bytes):
-    return PdfReader(BytesIO(pdf_bytes))
-
-def fetch_pdf_from_url(url):
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        return response.content
-    except Exception as e:
-        st.error(f"❌ Failed to fetch PDF: {e}")
-        return None
-
-# Determine PDF bytes
-pdf_bytes = None
 if pdf_file:
-    pdf_bytes = pdf_file.read()
-elif pdf_url:
-    pdf_bytes = fetch_pdf_from_url(pdf_url)
+    pdf_reader = PdfReader(pdf_file)
+    total_pages = len(pdf_reader.pages)
 
-if pdf_bytes:
-    reader = load_pdf(pdf_bytes)
-    total_pages = len(reader.pages)
+    st.sidebar.header("📄 Page Selection")
+    page_numbers = st.sidebar.multiselect(
+        "Select pages to read aloud",
+        options=list(range(1, total_pages + 1)),
+        default=[1],
+    )
 
-    # Layout
-    left, right = st.columns([1, 1.5])
-
-    with right:
-        st.subheader("📄 PDF Preview")
-        pdf_viewer(input=pdf_bytes, height=700)
-
-    with left:
-        page_numbers = st.multiselect("Select pages to read", list(range(1, total_pages + 1)), default=[1])
-        extracted_text = ""
-
-        for num in page_numbers:
-            text = reader.pages[num - 1].extract_text()
+    if page_numbers:
+        full_text = ""
+        for i in page_numbers:
+            page = pdf_reader.pages[i - 1]
+            text = page.extract_text()
             if text:
-                extracted_text += text + "\n\n"
+                full_text += text + "\n"
 
-        if extracted_text.strip():
-            st.subheader("📖 Extracted Text")
-            st.text_area("Text", extracted_text, height=300)
+        st.subheader("📝 Extracted Text")
+        st.write(full_text)
 
-            # Language detection
+        # Detect language
+        try:
+            detected_lang = detect(full_text)
+            st.success(f"🌍 Detected Language: `{detected_lang}`")
+        except Exception as e:
+            st.warning(f"Language detection failed: {e}")
+            detected_lang = "en"
+
+        # Voice and speed controls
+        st.sidebar.header("🔈 TTS Options")
+        slow = st.sidebar.checkbox("Slow Speed", value=False)
+
+        # Language options override (optional)
+        lang_override = st.sidebar.text_input(
+            "Override Language Code (optional)", value=detected_lang
+        )
+        selected_lang = lang_override.strip() if lang_override else detected_lang
+
+        if st.button("🔊 Read Selected Pages Aloud"):
             try:
-                lang_detected = detect(extracted_text)
-                st.info(f"🌍 Detected Language: **{lang_detected.upper()}**")
-            except:
-                lang_detected = "en"
-                st.warning("⚠️ Language detection failed. Defaulted to English.")
-
-            # Read aloud
-            if st.button("🔊 Read Aloud"):
-                try:
-                    tts = gTTS(text=extracted_text, lang=speech_lang, slow=slow)
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_file:
-                        audio_path = tmp_file.name
-                        tts.save(audio_path)
-                    with open(audio_path, "rb") as f:
-                        st.audio(f.read(), format="audio/mp3")
-                    os.remove(audio_path)
-                except Exception as e:
-                    st.error(f"❌ TTS failed: {e}")
-
-            # Q&A
-            if st.checkbox("💬 Ask a question (Ollama)"):
-                question = st.text_input("Enter your question:")
-                if question:
-                    with st.spinner("Thinking..."):
-                        try:
-                            llm = Ollama(model="llama3")
-                            chain = load_qa_chain(llm, chain_type="stuff")
-                            docs = [Document(page_content=extracted_text)]
-                            answer = chain.run(input_documents=docs, question=question)
-                            st.success(answer)
-                        except Exception as e:
-                            st.error(f"❌ Ollama error: {e}")
-        else:
-            st.warning("📭 No text extracted from selected pages.")
-else:
-    st.info("📂 Please upload a PDF or enter a valid URL to continue.")
+                tts = gTTS(text=full_text, lang=selected_lang, slow=slow)
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
+                    tts.save(fp.name)
+                    st.audio(fp.name, format="audio/mp3")
+                    with open(fp.name, "rb") as audio_file:
+                        st.download_button(
+                            label="💾 Download Audio",
+                            data=audio_file,
+                            file_name="tts_output.mp3",
+                            mime="audio/mp3",
+                        )
+            except Exception as e:
+                st.error(f"❌ TTS failed: {e}")
+    else:
+        st.info("Please select at least one page.")
