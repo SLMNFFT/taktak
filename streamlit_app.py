@@ -82,20 +82,4 @@ if pdf_file:
 
     with col2:
         st.subheader("👁️ PDF Preview")
-
-        # Page selector
-        selected_preview_page = st.number_input(
-            label="Select Page to Preview", 
-            min_value=1, 
-            max_value=total_pages, 
-            value=1, 
-            step=1
-        )
-
-        # Show one page with scroll height
-        pdf_viewer(
-            tmp_pdf_path,
-            height=600,
-            width=700,
-            initial_page=selected_preview_page - 1
-        )
+        pdf_viewer(tmp_pdf_path)
