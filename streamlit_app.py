@@ -119,28 +119,27 @@ if pdf_bytes:
                 st.warning("⚠️ Language detection failed. Defaulting to English.")
 
             if st.button("🔊 Read Selected Pages Aloud"):
-                try:
-                    text_chunks = split_text(page_texts, max_length=500)
-                    temp_files = []
-                    for i, chunk in enumerate(text_chunks):
-                        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
-                        temp_files.append(temp_file.name)
-                        engine.save_to_file(chunk, temp_file.name)
-                    
-                    engine.runAndWait()
+    try:
+        full_text = "\n".join([p.strip() for p in page_texts.split('\n') if p.strip()])
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
+            audio_path = tmp_file.name
+            engine.save_to_file(full_text, audio_path)
+            engine.runAndWait()
 
-                    final_audio = tempfile.NamedTemporaryFile(delete=False, suffix=".wav").name
-                    concatenate_audio(temp_files, final_audio)
+        # Wait for file creation
+        waited = 0
+        while (not os.path.exists(audio_path) or os.path.getsize(audio_path) == 0) and waited < 5:
+            time.sleep(0.2)
+            waited += 0.2
 
-                    with open(final_audio, 'rb') as f:
-                        st.audio(f.read(), format="audio/wav")
+        if os.path.exists(audio_path) and os.path.getsize(audio_path) > 0:
+            with open(audio_path, 'rb') as f:
+                st.audio(f.read(), format="audio/wav")
+        else:
+            st.error("❌ Audio file was not created.")
+    except Exception as e:
+        st.error(f"❌ Speech synthesis failed: {e}")
 
-                    for f_path in temp_files:
-                        os.remove(f_path)
-                    os.remove(final_audio)
-
-                except Exception as e:
-                    st.error(f"❌ Speech synthesis failed: {e}")
 
             if st.checkbox("💬 Ask a question about the selected pages (Ollama)"):
                 question = st.text_input("Ask your question:")
