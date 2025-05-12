@@ -42,11 +42,11 @@ if pdf_file:
 
             st.subheader("📝 Extracted Text")
 
-            # Styling the extracted text with a light gray background and scrollable area
+            # Styling the extracted text with a black background and white text
             st.markdown(
                 f"""
-                <div style="height: 800px; overflow-y: auto; padding: 1rem; background-color: #f0f0f0; border: 1px solid #ddd; border-radius: 5px;">
-                    <pre style="white-space: pre-wrap; color: black;">{full_text}</pre>
+                <div style="height: 800px; overflow-y: auto; padding: 1rem; background-color: black; border: 1px solid #ddd; border-radius: 5px;">
+                    <pre style="white-space: pre-wrap; color: white;">{full_text}</pre>
                 </div>
                 """,
                 unsafe_allow_html=True
