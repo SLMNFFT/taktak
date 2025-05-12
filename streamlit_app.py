@@ -48,7 +48,8 @@ if pdf_file:
                     <pre style="white-space: pre-wrap;">{full_text}</pre>
                 </div>
                 """,
-    unsafe_allow_html=True
+                   unsafe_allow_html=True
+                )
 
             try:
                 detected_lang = detect(full_text)
