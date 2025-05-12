@@ -9,5 +9,5 @@ langchain==0.1.14
 langchain-community==0.0.32
 ollama==0.1.9
 pydub==0.25.1
-
+ffmpeg
 
