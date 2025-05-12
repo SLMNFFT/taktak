@@ -10,6 +10,7 @@ import time
 import wave
 import requests
 
+from gtts import gTTS
 from langchain_community.llms import Ollama
 from langchain.chains.question_answering import load_qa_chain
 from langchain.docstore.document import Document
