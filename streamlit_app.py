@@ -103,17 +103,13 @@ if pdf_bytes:
             # ...existing code...
             if st.button("🔊 Read Selected Pages Aloud"):
                 try:
-                    # Text in Absätze aufteilen
-                    paragraphs = [p.strip() for p in page_texts.split('\n') if p.strip()]
+                    combined_text = "\n\n".join([p.strip() for p in page_texts.split('\n') if p.strip()])
                     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
                         audio_path = tmp_file.name
 
-        # Jeden Absatz einzeln an die Engine übergeben
-                    for para in paragraphs:
-                        engine.save_to_file(para, audio_path)
-                        engine.runAndWait()
+                    engine.save_to_file(combined_text, audio_path)
+                    engine.runAndWait()
 
-                    # Sicherstellen, dass die Datei existiert und nicht leer ist
                     waited = 0
                     while (not os.path.exists(audio_path) or os.path.getsize(audio_path) == 0) and waited < 5:
                         time.sleep(0.2)
@@ -123,9 +119,10 @@ if pdf_bytes:
                         with open(audio_path, 'rb') as f:
                             st.audio(f.read(), format="audio/wav")
                     else:
-                        st.error("❌ Audio file was not created.")
+                       st.error("❌ Audio file was not created.")
                 except Exception as e:
                     st.error(f"❌ Speech synthesis failed: {e}")
+
 # ...existing code...
 
             # Ollama Q&A
