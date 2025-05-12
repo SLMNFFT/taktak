@@ -42,9 +42,10 @@ if pdf_file:
 
             st.subheader("📝 Extracted Text")
 
+            # Styling the extracted text with a light gray background and scrollable area
             st.markdown(
                 f"""
-                <div style="height: 800px; overflow-y: auto; padding: 1rem; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 5px;">
+                <div style="height: 800px; overflow-y: auto; padding: 1rem; background-color: #f0f0f0; border: 1px solid #ddd; border-radius: 5px;">
                     <pre style="white-space: pre-wrap; color: black;">{full_text}</pre>
                 </div>
                 """,
@@ -102,9 +103,10 @@ if pdf_file:
             ></iframe>
         """
 
+        # Styling the PDF viewer with a light gray background and scrollable area
         st.markdown(
             f"""
-            <div style="overflow-y: auto; height: 820px;">
+            <div style="overflow-y: auto; height: 820px; background-color: #f0f0f0; padding: 1rem; border-radius: 5px;">
                 {pdf_viewer_html}
             </div>
             """,
