@@ -3,14 +3,12 @@ import PyPDF2
 from langdetect import detect
 from streamlit_pdf_viewer import pdf_viewer
 from io import BytesIO
-import pyttsx3
 import tempfile
 import os
 import time
-import wave
 import requests
-
 from gtts import gTTS
+
 from langchain_community.llms import Ollama
 from langchain.chains.question_answering import load_qa_chain
 from langchain.docstore.document import Document
@@ -18,28 +16,9 @@ from langchain.docstore.document import Document
 st.set_page_config(page_title="TakTak", layout="wide")
 st.title("📄 TakTaK PDF Reader with Multilingual Audio Assistance")
 
-# Initialize pyttsx3
-engine = pyttsx3.init()
-
-# Get available voices
-voices = engine.getProperty('voices')
-voice_options = {
-    f"{v.name} ({v.languages[0] if v.languages else 'unknown'})": v.id
-    for v in voices
-}
-
-default_voice = list(voice_options.keys())[0]
-
-# Sidebar controls
-st.sidebar.header("🎙️ Speech Settings")
-selected_voice = st.sidebar.selectbox("Choose Voice", options=list(voice_options.keys()), index=0)
-rate = st.sidebar.slider("Speech Rate", 100, 300, 150)
-volume = st.sidebar.slider("Volume", 0.0, 1.0, 1.0)
-
-# Apply TTS settings
-engine.setProperty('rate', rate)
-engine.setProperty('volume', volume)
-engine.setProperty('voice', voice_options[selected_voice])
+# Sidebar info
+st.sidebar.header("🎙️ Speech Settings (gTTS)")
+st.sidebar.markdown("Using Google Text-to-Speech for high-quality, reliable multilingual audio.")
 
 # File upload or URL input
 pdf_file = st.file_uploader("Upload your PDF", type=["pdf"])
@@ -57,30 +36,6 @@ def fetch_pdf_from_url(url):
     except Exception as e:
         st.error(f"❌ Error fetching PDF from URL: {e}")
         return None
-
-# Split text into chunks
-def split_text(text, max_length=500):
-    paragraphs = text.split('\n')
-    chunks = []
-    current_chunk = ""
-    for para in paragraphs:
-        if len(current_chunk) + len(para) < max_length:
-            current_chunk += para + " "
-        else:
-            chunks.append(current_chunk.strip())
-            current_chunk = para + " "
-    if current_chunk:
-        chunks.append(current_chunk.strip())
-    return chunks
-
-# Concatenate audio chunks
-def concatenate_audio(files, output_path):
-    with wave.open(output_path, 'wb') as output:
-        with wave.open(files[0], 'rb') as first:
-            output.setparams(first.getparams())
-        for file in files:
-            with wave.open(file, 'rb') as f:
-                output.writeframes(f.readframes(f.getnframes()))
 
 # Determine PDF content based on input
 if pdf_file:
@@ -120,27 +75,17 @@ if pdf_bytes:
                 st.warning("⚠️ Language detection failed. Defaulting to English.")
 
             if st.button("🔊 Read Selected Pages Aloud"):
-    try:
-        full_text = "\n".join([p.strip() for p in page_texts.split('\n') if p.strip()])
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
-            audio_path = tmp_file.name
-            engine.save_to_file(full_text, audio_path)
-            engine.runAndWait()
+                try:
+                    full_text = "\n".join([p.strip() for p in page_texts.split('\n') if p.strip()])
+                    tts = gTTS(text=full_text, lang=detected_lang)
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_file:
+                        audio_path = tmp_file.name
+                        tts.save(audio_path)
 
-        # Wait for file creation
-        waited = 0
-        while (not os.path.exists(audio_path) or os.path.getsize(audio_path) == 0) and waited < 5:
-            time.sleep(0.2)
-            waited += 0.2
-
-        if os.path.exists(audio_path) and os.path.getsize(audio_path) > 0:
-            with open(audio_path, 'rb') as f:
-                st.audio(f.read(), format="audio/wav")
-        else:
-            st.error("❌ Audio file was not created.")
-    except Exception as e:
-        st.error(f"❌ Speech synthesis failed: {e}")
-
+                    with open(audio_path, 'rb') as f:
+                        st.audio(f.read(), format="audio/mp3")
+                except Exception as e:
+                    st.error(f"❌ Speech synthesis failed: {e}")
 
             if st.checkbox("💬 Ask a question about the selected pages (Ollama)"):
                 question = st.text_input("Ask your question:")
