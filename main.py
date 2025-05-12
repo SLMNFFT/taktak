@@ -13,8 +13,8 @@ from langchain_community.llms import Ollama
 from langchain.chains.question_answering import load_qa_chain
 from langchain.docstore.document import Document
 
-st.set_page_config(page_title="PDF Reader with Multilingual Audio", layout="wide")
-st.title("📄 RecjaK PDF Reader with Multilingual Audio Assistance")
+st.set_page_config(page_title="TakTak", layout="wide")
+st.title("📄 TakTaK PDF Reader with Multilingual Audio Assistance")
 
 # Initialize pyttsx3
 engine = pyttsx3.init()
