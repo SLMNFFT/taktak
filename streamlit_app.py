@@ -143,3 +143,4 @@ if pdf_path:
 
 else:
     st.info("📂 Please upload a PDF file or provide a URL to begin.")
+
