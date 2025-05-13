@@ -74,12 +74,13 @@ if pdf_path:
             st.subheader("📝 Extracted Text")
             st.markdown(
                 f"""
-                <div style="height: 500px; overflow-y: auto; padding: 1rem; background-color: black; border: 1px solid #ddd; border-radius: 5px;">
-                    <pre style="white-space: pre-wrap; color: white;">{full_text}</pre>
+                <div style="height: 500px; overflow-y: auto; padding: 1rem; background-color: black; border: 1px solid #ddd; border-radius: 5px; line-height: 1.5;">
+                    <pre style="white-space: pre-wrap; word-break: break-word; color: white; font-size: 16px; font-family: 'Courier New', monospace;">{full_text}</pre>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
+
 
             try:
                 detected_lang = detect(full_text)
