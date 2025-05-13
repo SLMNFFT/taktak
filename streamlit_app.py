@@ -72,10 +72,10 @@ if pdf_path:
                     full_text += text + "\n"
 
             st.subheader("📝 Extracted Text")
-            # Create a scrollable frame for Extracted Text
+            # Scrollable frame for Extracted Text with fixed height
             st.markdown(
                 f"""
-                <div style="height: 80vh; overflow-y: auto; padding: 1rem; background-color: black; border: 1px solid #ddd; border-radius: 5px;">
+                <div style="height: 500px; overflow-y: auto; padding: 1rem; background-color: black; border: 1px solid #ddd; border-radius: 5px;">
                     <pre style="white-space: pre-wrap; color: white;">{full_text}</pre>
                 </div>
                 """,
@@ -124,9 +124,9 @@ if pdf_path:
                 mime="application/pdf"
             )
 
-        # Scrollable PDF Preview inside a fixed-height frame
+        # Scrollable PDF Preview with fixed height
         if page_numbers:
-            st.markdown("""<div style="height: 80vh; overflow-y: auto; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; border-radius: 5px; overflow-x: hidden;">""", unsafe_allow_html=True)
+            st.markdown("""<div style="height: 500px; overflow-y: auto; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; border-radius: 5px; overflow-x: hidden;">""", unsafe_allow_html=True)
 
             with pdfplumber.open(pdf_path) as pdf:
                 for i, page in enumerate(pdf.pages):
