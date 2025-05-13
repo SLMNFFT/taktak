@@ -5,18 +5,16 @@ from gtts import gTTS
 import tempfile
 import os
 import base64
-import shutil
 
 st.set_page_config(layout="wide")
-st.title("📖  Mogontia Audiobook generator - generate your own Audiobook Reference")
+st.title("📖  Mogontia Audiobook Generator - Generate Your Own Audiobook Reference")
 
 # Upload PDF
 pdf_file = st.file_uploader("Upload a PDF file", type=["pdf"])
 
 if pdf_file:
-    # Save uploaded file to a static location
-    temp_dir = "static"
-    os.makedirs(temp_dir, exist_ok=True)
+    # Save uploaded file to a temporary location
+    temp_dir = tempfile.mkdtemp()
     pdf_path = os.path.join(temp_dir, "uploaded.pdf")
     with open(pdf_path, "wb") as f:
         f.write(pdf_file.read())
@@ -44,8 +42,6 @@ if pdf_file:
                     full_text += text + "\n"
 
             st.subheader("📝 Extracted Text")
-
-            # Styling the extracted text with a black background and white text
             st.markdown(
                 f"""
                 <div style="height: 800px; overflow-y: auto; padding: 1rem; background-color: black; border: 1px solid #ddd; border-radius: 5px;">
@@ -91,15 +87,16 @@ if pdf_file:
     with col2:
         st.subheader("👁️ Scrollable PDF Preview")
 
-        # Use local server path instead of base64 embedding
-        st.markdown(
-            f"""
-            <iframe
-                src="/static/uploaded.pdf"
-                width="100%"
-                height="800px"
-                style="border:1px solid #ccc; background-color: white;"
-            ></iframe>
-            """,
-            unsafe_allow_html=True
-        )
+        with open(pdf_path, "rb") as f:
+            base64_pdf = base64.b64encode(f.read()).decode("utf-8")
+
+        pdf_display = f"""
+        <iframe
+            src="data:application/pdf;base64,{base64_pdf}"
+            width="100%"
+            height="800px"
+            style="border:1px solid #ccc; background-color: white;"
+        ></iframe>
+        """
+
+        st.markdown(pdf_display, unsafe_allow_html=True)
