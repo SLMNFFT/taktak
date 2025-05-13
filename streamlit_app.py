@@ -74,13 +74,12 @@ if pdf_path:
             st.subheader("📝 Extracted Text")
             st.markdown(
                 f"""
-                <div style="height: 500px; overflow-y: auto; padding: 1rem; background-color: black; border: 1px solid #ddd; border-radius: 5px; line-height: 1.5;">
-                    <pre style="white-space: pre-wrap; word-break: break-word; color: white; font-size: 16px; font-family: 'Courier New', monospace;">{full_text}</pre>
+                <div style="height: 500px; overflow-y: auto; padding: 1rem; background-color: black; border: 1px solid #ddd; border-radius: 5px;">
+                    <pre style="white-space: pre-wrap; color: white;">{full_text}</pre>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-
 
             try:
                 detected_lang = detect(full_text)
@@ -114,12 +113,6 @@ if pdf_path:
 
     with col2:
         st.subheader("👁️ PDF Preview")
-        st.markdown(
-            f"""
-            <div style="height: 500px; overflow-y: auto; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; border-radius: 5px;">
-            """,
-            unsafe_allow_html=True
-        )
 
         with open(pdf_path, "rb") as f:
             st.download_button(
@@ -128,6 +121,13 @@ if pdf_path:
                 file_name="your_file.pdf",
                 mime="application/pdf"
             )
+
+        st.markdown(
+            f"""
+            <div style="height: 500px; overflow-y: auto; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; border-radius: 5px;">
+            """,
+            unsafe_allow_html=True
+        )
 
         with pdfplumber.open(pdf_path) as pdf:
             for i, page in enumerate(pdf.pages):
