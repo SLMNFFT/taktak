@@ -124,24 +124,22 @@ if pdf_path:
                 mime="application/pdf"
             )
 
-        # Scrollable PDF Preview with fixed height
-        if page_numbers:
-            st.markdown("""<div style="height: 500px; overflow-y: auto; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; border-radius: 5px; overflow-x: hidden;">""", unsafe_allow_html=True)
+        # Scrollable PDF Preview with fixed height based on screen dimensions
+        st.markdown("""<div style="height: 500px; overflow-y: auto; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; border-radius: 5px; overflow-x: hidden;">""", unsafe_allow_html=True)
 
-            with pdfplumber.open(pdf_path) as pdf:
-                for i, page in enumerate(pdf.pages):
-                    if i + 1 in page_numbers:
-                        image = page.to_image(resolution=150).original
-                        image_base64 = pil_to_base64(image)
-                        st.markdown(f"""
-                            <div style="margin-bottom: 20px; text-align: center;">
-                                <img src="data:image/png;base64,{image_base64}" style="width: 100%;" />
-                                <p style="color: #666;">Page {i + 1}</p>
-                            </div>
-                        """, unsafe_allow_html=True)
+        with pdfplumber.open(pdf_path) as pdf:
+            for i, page in enumerate(pdf.pages):
+                if i + 1 in page_numbers:
+                    image = page.to_image(resolution=150).original
+                    image_base64 = pil_to_base64(image)
+                    st.markdown(f"""
+                        <div style="margin-bottom: 20px; text-align: center;">
+                            <img src="data:image/png;base64,{image_base64}" style="width: 100%;" />
+                            <p style="color: #666;">Page {i + 1}</p>
+                        </div>
+                    """, unsafe_allow_html=True)
 
-            st.markdown("</div>", unsafe_allow_html=True)
-        else:
-            st.info("ℹ️ No pages selected for preview.")
+        st.markdown("</div>", unsafe_allow_html=True)
+
 else:
     st.info("📂 Please upload a PDF file or provide a URL to begin.")
