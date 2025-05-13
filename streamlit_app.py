@@ -123,10 +123,9 @@ if pdf_path:
                 mime="application/pdf"
             )
 
-        # Only render the visual preview if pages are selected
+        # Visual Preview inside a dynamic frame
         if page_numbers:
-            st.markdown("### 🖼️ Visual Preview")
-            st.markdown("""<div style="height: 800px; overflow-y: scroll; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9;">""", unsafe_allow_html=True)
+            st.markdown("""<div style="height: 70vh; overflow-y: auto; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; border-radius: 5px;">""", unsafe_allow_html=True)
 
             with pdfplumber.open(pdf_path) as pdf:
                 for i, page in enumerate(pdf.pages):
