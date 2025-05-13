@@ -4,27 +4,27 @@ from langdetect import detect
 from gtts import gTTS
 import tempfile
 import os
+import base64
 
 st.set_page_config(layout="wide")
-st.title("📖 Mogontia Audiobook Generator")
+st.title("📖 Mogontia Audiobook Generator - Generate Your Own Audiobook Reference")
 
 # Upload PDF
 pdf_file = st.file_uploader("Upload a PDF file", type=["pdf"])
 
 if pdf_file:
-    # Save to temp file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-        tmp.write(pdf_file.read())
-        pdf_path = tmp.name
+    # Save uploaded file to a temp location
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+        tmp_file.write(pdf_file.read())
+        pdf_path = tmp_file.name
 
-    # Read PDF
-    pdf_reader = PdfReader(pdf_path)
-    total_pages = len(pdf_reader.pages)
-
-    # Layout
+    # Left and Right columns
     col1, col2 = st.columns([2, 3])
 
     with col1:
+        pdf_reader = PdfReader(pdf_path)
+        total_pages = len(pdf_reader.pages)
+
         st.sidebar.header("📄 Page Selection")
         page_numbers = st.sidebar.multiselect(
             "Select pages to read aloud",
@@ -86,11 +86,17 @@ if pdf_file:
     with col2:
         st.subheader("👁️ Scrollable PDF Preview")
 
-        # Serve the local file to PDF.js
-        viewer_html = f"""
-        <iframe src="https://mozilla.github.io/pdf.js/web/viewer.html?file=file://{pdf_path}"
-                width="100%"
-                height="800px"
-                style="border:1px solid #ccc;"></iframe>
+        # Encode PDF as base64
+        with open(pdf_path, "rb") as f:
+            base64_pdf = base64.b64encode(f.read()).decode("utf-8")
+
+        pdf_display = f"""
+        <iframe 
+            src="data:application/pdf;base64,{base64_pdf}"
+            width="100%" 
+            height="800px" 
+            type="application/pdf"
+            style="border:1px solid #ccc; border-radius: 4px;">
+        </iframe>
         """
-        st.markdown(viewer_html, unsafe_allow_html=True)
+        st.markdown(pdf_display, unsafe_allow_html=True)
