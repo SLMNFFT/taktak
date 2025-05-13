@@ -72,7 +72,6 @@ if pdf_path:
                     full_text += text + "\n"
 
             st.subheader("📝 Extracted Text")
-            # Scrollable frame for Extracted Text with fixed height
             st.markdown(
                 f"""
                 <div style="height: 500px; overflow-y: auto; padding: 1rem; background-color: black; border: 1px solid #ddd; border-radius: 5px;">
@@ -115,7 +114,6 @@ if pdf_path:
     with col2:
         st.subheader("👁️ PDF Preview")
 
-        # Download/Open PDF
         with open(pdf_path, "rb") as f:
             st.download_button(
                 label="📥 Open or Download PDF",
@@ -124,12 +122,12 @@ if pdf_path:
                 mime="application/pdf"
             )
 
-        # Scrollable PDF Preview with fixed height based on screen dimensions
-       st.markdown(f"""
-    <div style="height: 500px; overflow-y: auto; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; border-radius: 5px;">
-""", unsafe_allow_html=True)
-
-
+        st.markdown(
+            f"""
+            <div style="height: 500px; overflow-y: auto; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; border-radius: 5px;">
+            """,
+            unsafe_allow_html=True
+        )
 
         with pdfplumber.open(pdf_path) as pdf:
             for i, page in enumerate(pdf.pages):
@@ -147,4 +145,3 @@ if pdf_path:
 
 else:
     st.info("📂 Please upload a PDF file or provide a URL to begin.")
-
