@@ -120,6 +120,6 @@ if pdf_path:
             for i, page in enumerate(pdf.pages):
                 if i + 1 in page_numbers:
                     image = page.to_image(resolution=150).original
-                    st.image(image, caption=f"Page {i + 1}", use_column_width=True)
+                    st.image(image, caption=f"Page {i + 1}", use_container_width=True)
 else:
     st.info("📂 Please upload a PDF file or provide a URL to begin.")
