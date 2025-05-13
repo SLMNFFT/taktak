@@ -123,9 +123,9 @@ if pdf_path:
                 mime="application/pdf"
             )
 
-        # Visual Preview inside a dynamic frame
+        # Scrollable PDF Preview inside a fixed-height frame
         if page_numbers:
-            st.markdown("""<div style="height: 70vh; overflow-y: auto; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; border-radius: 5px;">""", unsafe_allow_html=True)
+            st.markdown("""<div style="height: 600px; overflow-y: auto; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; border-radius: 5px; overflow-x: hidden;">""", unsafe_allow_html=True)
 
             with pdfplumber.open(pdf_path) as pdf:
                 for i, page in enumerate(pdf.pages):
