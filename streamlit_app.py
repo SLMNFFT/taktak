@@ -125,7 +125,10 @@ if pdf_path:
             )
 
         # Scrollable PDF Preview with fixed height based on screen dimensions
-        st.markdown("""<div style="height: 500px; overflow-y: auto; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; border-radius: 5px; overflow-x: hidden;">""", unsafe_allow_html=True)
+       st.markdown("""
+    <div style="height: 500px; overflow-y: auto; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; border-radius: 5px;">
+""", unsafe_allow_html=True)
+
 
         with pdfplumber.open(pdf_path) as pdf:
             for i, page in enumerate(pdf.pages):
