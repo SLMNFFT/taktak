@@ -5,24 +5,28 @@ from gtts import gTTS
 import tempfile
 import os
 import base64
+import shutil
 
 st.set_page_config(layout="wide")
-st.title("📖 Mogontia - Create Your Audio Reference")
+st.title("📖 Audiobook Mogontia 
+             Create Your own Audiobook Reference")
 
 # Upload PDF
 pdf_file = st.file_uploader("Upload a PDF file", type=["pdf"])
 
 if pdf_file:
-    # Save uploaded file temporarily
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-        tmp.write(pdf_file.read())
-        tmp_path = tmp.name
+    # Save uploaded file to a static location
+    temp_dir = "static"
+    os.makedirs(temp_dir, exist_ok=True)
+    pdf_path = os.path.join(temp_dir, "uploaded.pdf")
+    with open(pdf_path, "wb") as f:
+        f.write(pdf_file.read())
 
-    # Left column: TTS features
+    # Left and Right columns
     col1, col2 = st.columns([2, 3])
 
     with col1:
-        pdf_reader = PdfReader(tmp_path)
+        pdf_reader = PdfReader(pdf_path)
         total_pages = len(pdf_reader.pages)
 
         st.sidebar.header("📄 Page Selection")
@@ -52,7 +56,6 @@ if pdf_file:
                 unsafe_allow_html=True
             )
 
-            # Detect language
             try:
                 detected_lang = detect(full_text)
                 st.success(f"🌍 Detected Language: `{detected_lang}`")
@@ -60,7 +63,6 @@ if pdf_file:
                 st.warning(f"Language detection failed: {e}")
                 detected_lang = "en"
 
-            # TTS Options
             st.sidebar.header("🔈 TTS Options")
             slow = st.sidebar.checkbox("Slow Speed", value=False)
 
@@ -87,28 +89,18 @@ if pdf_file:
         else:
             st.info("Please select at least one page.")
 
-    # Right column: Scrollable PDF viewer
     with col2:
         st.subheader("👁️ Scrollable PDF Preview")
 
-        with open(tmp_path, "rb") as f:
-            base64_pdf = base64.b64encode(f.read()).decode('utf-8')
-
-        pdf_viewer_html = f"""
-            <iframe
-                src="data:application/pdf;base64,{base64_pdf}"
-                width="100%"
-                height="800px"
-                style="border:1px solid #ccc;"
-            ></iframe>
-        """
-
-        # Styling the PDF viewer with a light gray background and scrollable area
+        # Use local server path instead of base64 embedding
         st.markdown(
             f"""
-            <div style="overflow-y: auto; height: 820px; background-color: #f0f0f0; padding: 1rem; border-radius: 5px;">
-                {pdf_viewer_html}
-            </div>
+            <iframe
+                src="/static/uploaded.pdf"
+                width="100%"
+                height="800px"
+                style="border:1px solid #ccc; background-color: white;"
+            ></iframe>
             """,
             unsafe_allow_html=True
         )
