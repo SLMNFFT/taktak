@@ -130,6 +130,7 @@ if pdf_path:
 """, unsafe_allow_html=True)
 
 
+
         with pdfplumber.open(pdf_path) as pdf:
             for i, page in enumerate(pdf.pages):
                 if i + 1 in page_numbers:
