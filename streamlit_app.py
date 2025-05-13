@@ -6,6 +6,9 @@ import tempfile
 import os
 import requests
 import pdfplumber
+from PIL import Image
+from io import BytesIO
+import base64
 
 st.set_page_config(layout="wide")
 st.title("📖 Mogontia Audiobook Generator")
@@ -25,6 +28,12 @@ def fetch_pdf_from_url(url):
     except Exception as e:
         st.error(f"❌ Error fetching PDF from URL: {e}")
         return None
+
+def pil_to_base64(img: Image.Image) -> str:
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    byte_im = buf.getvalue()
+    return base64.b64encode(byte_im).decode("utf-8")
 
 # Save PDF to temp file
 if pdf_file:
@@ -105,7 +114,7 @@ if pdf_path:
     with col2:
         st.subheader("👁️ PDF Preview")
 
-        # Option 1: Download or open in browser
+        # Download/Open PDF
         with open(pdf_path, "rb") as f:
             st.download_button(
                 label="📥 Open or Download PDF",
@@ -114,12 +123,24 @@ if pdf_path:
                 mime="application/pdf"
             )
 
-        # Option 2: Render pages as images using pdfplumber
+        # Scrollable Visual Preview
         st.markdown("### 🖼️ Visual Preview")
+        st.markdown("""
+        <div style="height: 800px; overflow-y: scroll; border: 1px solid #ccc; padding: 1rem;">
+        """, unsafe_allow_html=True)
+
         with pdfplumber.open(pdf_path) as pdf:
             for i, page in enumerate(pdf.pages):
                 if i + 1 in page_numbers:
                     image = page.to_image(resolution=150).original
-                    st.image(image, caption=f"Page {i + 1}", use_container_width=True)
+                    image_base64 = pil_to_base64(image)
+                    st.markdown(f"""
+                        <div style="margin-bottom: 20px;">
+                            <img src="data:image/png;base64,{image_base64}" style="width: 100%;" />
+                            <p style="text-align: center;">Page {i + 1}</p>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+        st.markdown("</div>", unsafe_allow_html=True)
 else:
     st.info("📂 Please upload a PDF file or provide a URL to begin.")
