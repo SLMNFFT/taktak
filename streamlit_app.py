@@ -125,9 +125,7 @@ if pdf_path:
 
         # Scrollable Visual Preview
         st.markdown("### 🖼️ Visual Preview")
-        st.markdown("""
-        <div style="height: 800px; overflow-y: scroll; border: 1px solid #ccc; padding: 1rem;">
-        """, unsafe_allow_html=True)
+        st.markdown("""<div style="height: 800px; overflow-y: scroll; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9;">""", unsafe_allow_html=True)
 
         with pdfplumber.open(pdf_path) as pdf:
             for i, page in enumerate(pdf.pages):
@@ -135,9 +133,9 @@ if pdf_path:
                     image = page.to_image(resolution=150).original
                     image_base64 = pil_to_base64(image)
                     st.markdown(f"""
-                        <div style="margin-bottom: 20px;">
+                        <div style="margin-bottom: 20px; text-align: center;">
                             <img src="data:image/png;base64,{image_base64}" style="width: 100%;" />
-                            <p style="text-align: center;">Page {i + 1}</p>
+                            <p style="color: #666;">Page {i + 1}</p>
                         </div>
                     """, unsafe_allow_html=True)
 
