@@ -5,33 +5,46 @@ from gtts import gTTS
 import tempfile
 import os
 import base64
-from pdf2image import convert_from_path
-import pytesseract
-from PIL import Image
+import requests
+from io import BytesIO
 
 st.set_page_config(layout="wide")
-st.title("📖 Mogontia Audiobook Generator - Multilingual PDF to Audio + Summary")
+st.title("📖 Mogontia Audiobook Generator - Generate Your Own Audiobook Reference")
 
-# Upload PDF
+# PDF URL or file upload
 pdf_file = st.file_uploader("Upload a PDF file", type=["pdf"])
+pdf_url = st.text_input("Or, provide a URL for an online PDF")
 
-def extract_text_with_ocr(pdf_path, page_number):
+# Function to fetch PDF from URL
+def fetch_pdf_from_url(url):
     try:
-        images = convert_from_path(pdf_path, first_page=page_number, last_page=page_number)
-        text = pytesseract.image_to_string(images[0])
-        return text
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.content
+        else:
+            st.error("❌ Failed to download PDF from URL.")
+            return None
     except Exception as e:
-        return ""
-
-def summarize_text(text):
-    # You can plug in your LLM here
-    return f"🔎 Summary (Placeholder): {text[:300]}..." if text else "No text to summarize."
+        st.error(f"❌ Error fetching PDF from URL: {e}")
+        return None
 
 if pdf_file:
+    # Save uploaded file to a temp location
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
         tmp_file.write(pdf_file.read())
         pdf_path = tmp_file.name
+elif pdf_url:
+    pdf_bytes = fetch_pdf_from_url(pdf_url)
+    if pdf_bytes:
+        # Save PDF to a temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+            tmp_file.write(pdf_bytes)
+            pdf_path = tmp_file.name
+else:
+    pdf_path = None
 
+if pdf_path:
+    # Left and Right columns
     col1, col2 = st.columns([2, 3])
 
     with col1:
@@ -45,17 +58,14 @@ if pdf_file:
             default=[1],
         )
 
-        full_text = ""
-        image_based_pages = []
+        if page_numbers:
+            full_text = ""
+            for i in page_numbers:
+                page = pdf_reader.pages[i - 1]
+                text = page.extract_text()
+                if text:
+                    full_text += text + "\n"
 
-        for i in page_numbers:
-            text = pdf_reader.pages[i - 1].extract_text()
-            if not text or text.strip() == "":
-                text = extract_text_with_ocr(pdf_path, i)
-                image_based_pages.append(i)
-            full_text += text + "\n"
-
-        if full_text.strip():
             st.subheader("📝 Extracted Text")
             st.markdown(
                 f"""
@@ -66,9 +76,6 @@ if pdf_file:
                 unsafe_allow_html=True
             )
 
-            if image_based_pages:
-                st.warning(f"📸 OCR used on image-only pages: {image_based_pages}")
-
             try:
                 detected_lang = detect(full_text)
                 st.success(f"🌍 Detected Language: `{detected_lang}`")
@@ -78,11 +85,11 @@ if pdf_file:
 
             st.sidebar.header("🔈 TTS Options")
             slow = st.sidebar.checkbox("Slow Speed", value=False)
-            lang_override = st.sidebar.text_input("Override Language Code (optional)", value=detected_lang)
-            selected_lang = lang_override.strip() if lang_override else detected_lang
 
-            if st.button("📌 Show Summary First"):
-                st.info(summarize_text(full_text))
+            lang_override = st.sidebar.text_input(
+                "Override Language Code (optional)", value=detected_lang
+            )
+            selected_lang = lang_override.strip() if lang_override else detected_lang
 
             if st.button("🔊 Read Selected Pages Aloud"):
                 try:
@@ -100,10 +107,12 @@ if pdf_file:
                 except Exception as e:
                     st.error(f"❌ TTS failed: {e}")
         else:
-            st.info("❗ No readable text found on selected pages.")
+            st.info("Please select at least one page.")
 
     with col2:
         st.subheader("👁️ Scrollable PDF Preview")
+
+        # Encode PDF as base64
         with open(pdf_path, "rb") as f:
             base64_pdf = base64.b64encode(f.read()).decode("utf-8")
 
@@ -117,6 +126,5 @@ if pdf_file:
         </iframe>
         """
         st.markdown(pdf_display, unsafe_allow_html=True)
-
 else:
-    st.info("📂 Please upload a PDF to begin.")
+    st.info("📂 Please upload a PDF file or provide a URL to begin.")
