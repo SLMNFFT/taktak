@@ -66,7 +66,7 @@ if pdf_path:
                 if text:
                     full_text += text + "\n"
 
-            st.subheader("📝 Extracted Text")
+            st.subheader("📝 P2lemy - Extracted Text")
             st.markdown(
                 f"""
                 <div style="height: 800px; overflow-y: auto; padding: 1rem; background-color: black; border: 1px solid #ddd; border-radius: 5px;">
