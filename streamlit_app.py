@@ -113,7 +113,7 @@ if pdf_path:
 
     with col2:
         st.subheader("👁️ PDF Preview")
-                st.markdown(
+        st.markdown(
             f"""
             <div style="height: 500px; overflow-y: auto; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; border-radius: 5px;">
             """,
@@ -127,8 +127,6 @@ if pdf_path:
                 file_name="your_file.pdf",
                 mime="application/pdf"
             )
-
-
 
         with pdfplumber.open(pdf_path) as pdf:
             for i, page in enumerate(pdf.pages):
