@@ -8,7 +8,7 @@ import base64
 import shutil
 
 st.set_page_config(layout="wide")
-st.title("📖 Audiobook Mogontia - Create Your own Audiobook Reference")
+st.title("📖  Mogontia Audiobook generator - generate your own Audiobook Reference")
 
 # Upload PDF
 pdf_file = st.file_uploader("Upload a PDF file", type=["pdf"])
