@@ -114,7 +114,6 @@ if pdf_path:
     with col2:
         st.subheader("👁️ PDF Preview")
 
-        # Download/Open PDF
         with open(pdf_path, "rb") as f:
             st.download_button(
                 label="📥 Open or Download PDF",
@@ -123,24 +122,28 @@ if pdf_path:
                 mime="application/pdf"
             )
 
-        # Scrollable Visual Preview
+        # Scrollable container for visual preview
         st.markdown("### 🖼️ Visual Preview")
-        st.markdown("""
-        <div style="height: 800px; overflow-y: scroll; border: 1px solid #ccc; padding: 1rem;">
-        """, unsafe_allow_html=True)
 
+        images_html = ""
         with pdfplumber.open(pdf_path) as pdf:
             for i, page in enumerate(pdf.pages):
                 if i + 1 in page_numbers:
                     image = page.to_image(resolution=150).original
-                    image_base64 = pil_to_base64(image)
-                    st.markdown(f"""
-                        <div style="margin-bottom: 20px;">
-                            <img src="data:image/png;base64,{image_base64}" style="width: 100%;" />
-                            <p style="text-align: center;">Page {i + 1}</p>
+                    img_base64 = pil_to_base64(image)
+                    images_html += f"""
+                        <div style="margin-bottom: 20px; text-align: center;">
+                            <img src="data:image/png;base64,{img_base64}" style="width: 100%;" />
+                            <p style="color: #666;">Page {i + 1}</p>
                         </div>
-                    """, unsafe_allow_html=True)
+                    """
 
-        st.markdown("</div>", unsafe_allow_html=True)
+        # Display all images in a scrollable box
+        st.markdown(f"""
+        <div style="height: 800px; overflow-y: scroll; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9;">
+            {images_html}
+        </div>
+        """, unsafe_allow_html=True)
+
 else:
     st.info("📂 Please upload a PDF file or provide a URL to begin.")
