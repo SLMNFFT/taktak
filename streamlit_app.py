@@ -7,19 +7,31 @@ import os
 import base64
 
 st.set_page_config(layout="wide")
-st.title("📖  Mogontia Audiobook Generator - Generate Your Own Audiobook Reference")
+st.title("📖 Mogontia Audiobook Generator - Generate Your Own Audiobook Reference")
 
 # Upload PDF
 pdf_file = st.file_uploader("Upload a PDF file", type=["pdf"])
 
 if pdf_file:
-    # Save uploaded file to a temporary location
-    temp_dir = tempfile.mkdtemp()
-    pdf_path = os.path.join(temp_dir, "uploaded.pdf")
-    with open(pdf_path, "wb") as f:
-        f.write(pdf_file.read())
+    # Read PDF bytes into memory
+    pdf_bytes = pdf_file.read()
 
-    # Left and Right columns
+    # Save to a temp file for processing
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+        tmp_file.write(pdf_bytes)
+        pdf_path = tmp_file.name
+
+    # Display the PDF on the right using base64
+    base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+    pdf_display = f"""
+        <iframe
+            src="data:application/pdf;base64,{base64_pdf}"
+            width="100%"
+            height="800px"
+            style="border:1px solid #ccc;"
+        ></iframe>
+    """
+
     col1, col2 = st.columns([2, 3])
 
     with col1:
@@ -86,17 +98,4 @@ if pdf_file:
 
     with col2:
         st.subheader("👁️ Scrollable PDF Preview")
-
-        with open(pdf_path, "rb") as f:
-            base64_pdf = base64.b64encode(f.read()).decode("utf-8")
-
-        pdf_display = f"""
-        <iframe
-            src="data:application/pdf;base64,{base64_pdf}"
-            width="100%"
-            height="800px"
-            style="border:1px solid #ccc; background-color: white;"
-        ></iframe>
-        """
-
         st.markdown(pdf_display, unsafe_allow_html=True)
