@@ -5,6 +5,8 @@ langdetect
 requests
 beautifulsoup4
 selenium
+pdfplumber
+io
 google-cloud-texttospeech
 
 
