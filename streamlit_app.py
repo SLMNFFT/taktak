@@ -11,7 +11,7 @@ import base64
 import os
 
 st.set_page_config(
-    page_title="Mogontia Audiobook",
+    page_title="🎧 Mogontia Audiobook",
     layout="wide",
     page_icon="🎧",
     menu_items={
