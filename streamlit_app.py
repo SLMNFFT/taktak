@@ -1,5 +1,5 @@
 import streamlit as st
-from pypdf import PdfReader
+from pypdf import PdfReader  # Using the maintained pypdf package
 from langdetect import detect
 from gtts import gTTS
 import tempfile
@@ -9,12 +9,118 @@ from PIL import Image
 from io import BytesIO
 import base64
 import os
-import re
 
-# ... [Keep all previous imports and style definitions] ...
+st.set_page_config(
+    page_title="Mogontia Audiobook",
+    layout="wide",
+    page_icon="📖",
+    menu_items={
+        'Get Help': 'https://github.com/mogontia/audiobook-gen',
+        'Report a bug': "https://github.com/mogontia/audiobook-gen/issues",
+        'About': "# 🎧 Mogontia Audiobook Generator\nBeta Version 0.2"
+    }
+)
+
+# Enhanced custom styles
+st.markdown("""
+    <style>
+    :root {
+        --primary: #1ed760;
+        --secondary: #535353;
+    }
+    html, body, [class*="css"]  {
+        background-color: #0d0d0d;
+        color: #e0e0e0;
+        font-family: 'Georgia', serif;
+    }
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+    .stButton>button {
+        color: white;
+        background-color: var(--secondary);
+        border-radius: 20px;
+        border: none;
+        padding: 0.5rem 2rem;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        background-color: var(--primary);
+        color: black;
+    }
+    .pdf-preview-scroll {
+        max-height: 80vh;
+        overflow-y: auto;
+        border: 1px solid #333;
+        padding: 1rem;
+        border-radius: 10px;
+        scrollbar-width: thin;
+    }
+    .pdf-preview img {
+        border: 2px solid #333;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+        transition: transform 0.2s;
+    }
+    .pdf-preview img:hover {
+        transform: scale(1.02);
+    }
+    .stAlert {
+        border-radius: 10px;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 def main():
-    # ... [Keep previous main() setup code] ...
+    st.title("📖 Mogontia — V0.2 Beta Audiobook Generator")
+    
+    # Upload section
+    st.header("📂 Choose Your Manuscript")
+    col_upload1, col_upload2 = st.columns(2)
+    
+    with col_upload1:
+        pdf_file = st.file_uploader(
+            "Upload a PDF document",
+            type=["pdf"],
+            help="Maximum file size: 50MB"
+        )
+    
+    with col_upload2:
+        pdf_url = st.text_input(
+            "Or enter PDF URL",
+            placeholder="https://example.com/document.pdf",
+            help="Supports direct PDF links"
+        )
+
+    # PDF processing functions
+    def fetch_pdf_from_url(url):
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            return response.content
+        except Exception as e:
+            st.error(f"❌ Error fetching PDF: {str(e)}")
+            return None
+
+    def pil_to_base64(img: Image.Image) -> str:
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+    # Handle file input
+    pdf_path = None
+    if pdf_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+            tmp_file.write(pdf_file.read())
+            pdf_path = tmp_file.name
+    elif pdf_url:
+        if pdf_url.strip():
+            content = fetch_pdf_from_url(pdf_url)
+            if content:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                    tmp_file.write(content)
+                    pdf_path = tmp_file.name
 
     # Main processing
     if pdf_path:
@@ -22,49 +128,31 @@ def main():
             with st.spinner("📖 Analyzing document..."):
                 pdf_reader = PdfReader(pdf_path)
                 total_pages = len(pdf_reader.pages)
-                
-                # Pre-process text for search
-                page_texts = {}
-                for page_num in range(total_pages):
-                    page = pdf_reader.pages[page_num]
-                    page_texts[page_num + 1] = page.extract_text() or ""
 
             # Sidebar controls
             st.sidebar.header("⚙️ Conversion Settings")
-            
-            # Search functionality
-            st.sidebar.markdown("---")
-            search_query = st.sidebar.text_input("🔍 Search document content")
-            
-            # Initialize session state for search results
-            if 'search_results' not in st.session_state:
-                st.session_state.search_results = {}
-
-            # Search logic
-            if search_query:
-                matches = {}
-                try:
-                    pattern = re.compile(f'({re.escape(search_query)})', re.IGNORECASE)
-                    for page_num, text in page_texts.items():
-                        if re.search(pattern, text):
-                            matches[page_num] = [m.start() for m in re.finditer(pattern, text)]
-                    st.session_state.search_results = matches
-                except re.error:
-                    st.sidebar.error("Invalid search pattern")
-            else:
-                st.session_state.search_results = {}
-
-            # Page selection with search integration
-            default_pages = [1] if not st.session_state.search_results else list(st.session_state.search_results.keys())
             selected_pages = st.sidebar.multiselect(
                 "Select pages to convert",
                 options=list(range(1, total_pages + 1)),
-                default=default_pages,
-                help="Select multiple pages for continuous narration",
-                key="page_selector"
+                default=[1],
+                help="Select multiple pages for continuous narration"
             )
-
-            # ... [Keep rest of sidebar controls] ...
+            
+            st.sidebar.markdown("---")
+            show_all_pages = st.sidebar.checkbox(
+                "Show all pages in preview",
+                value=False,
+                help="Display full document preview"
+            )
+            
+            # Language settings
+            with st.sidebar.expander("🌐 Language Settings"):
+                slow = st.checkbox("Slow narration speed")
+                lang_override = st.text_input(
+                    "Override language code",
+                    value="auto",
+                    help="ISO 639-1 language code (e.g., 'en', 'es')"
+                )
 
             # Main columns
             col_left, col_right = st.columns([1.5, 2])
@@ -72,18 +160,10 @@ def main():
             with col_left:
                 with st.expander("📜 Extracted Text", expanded=True):
                     full_text = ""
-                    highlighted_text = ""
                     for page_num in selected_pages:
-                        text = page_texts.get(page_num, "")
-                        if text:
-                            # Highlight search matches
-                            if page_num in st.session_state.search_results:
-                                text = re.sub(
-                                    pattern, 
-                                    r'<span style="background-color: #FFD70088; border-radius: 2px;">\1</span>', 
-                                    text
-                                )
-                            full_text += f"Page {page_num}:\n{text}\n\n"
+                        page = pdf_reader.pages[page_num - 1]
+                        text = page.extract_text()
+                        full_text += text + "\n\n" if text else ""
 
                     if full_text:
                         st.markdown(f"""
@@ -99,62 +179,58 @@ def main():
                                     font-family: Georgia, serif;
                                     color: #ddd;
                                     margin: 0;
-                                    line-height: 1.5;
                                 '>{full_text}</pre>
                             </div>
                         """, unsafe_allow_html=True)
                         
-                        # ... [Keep existing language detection and audio code] ...
+                        try:
+                            detected_lang = detect(full_text[:500])  # Limit detection to first 500 chars
+                            lang = lang_override if lang_override != "auto" else detected_lang
+                            st.success(f"🌍 Detected language: {detected_lang.upper()} | Using: {lang.upper()}")
+                        except Exception as e:
+                            st.warning(f"⚠️ Language detection error: {e}")
+                            lang = "en"
+
+                        # Audio generation
+                        if st.button("🎧 Generate Audiobook", type="primary"):
+                            with st.spinner("🔊 Generating audio..."):
+                                try:
+                                    tts = gTTS(text=full_text, lang=lang, slow=slow)
+                                    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
+                                        tts.save(fp.name)
+                                        st.audio(fp.name, format="audio/mp3")
+                                        st.download_button(
+                                            "💾 Download Audiobook",
+                                            data=open(fp.name, "rb"),
+                                            file_name="audiobook.mp3",
+                                            mime="audio/mp3",
+                                            use_container_width=True
+                                        )
+                                except Exception as e:
+                                    st.error(f"🚨 Audio generation failed: {e}")
+                    else:
+                        st.info("🔍 No text found in selected pages")
 
             with col_right:
                 with st.expander("🖼️ Document Preview", expanded=True):
                     st.markdown('<div class="pdf-preview-scroll">', unsafe_allow_html=True)
                     with pdfplumber.open(pdf_path) as pdf:
                         for i, page in enumerate(pdf.pages):
-                            page_num = i + 1
-                            show_it = show_all_pages or (page_num in selected_pages)
-                            if show_it:
+                            if show_all_pages or (i + 1) in selected_pages:
                                 image = page.to_image(resolution=150).original
                                 img_base64 = pil_to_base64(image)
-                                
-                                # Add search result indicator
-                                border_style = ""
-                                if page_num in st.session_state.search_results:
-                                    border_style = "border: 2px solid #FFD700; box-shadow: 0 0 10px #FFD70088;"
-                                    matches_count = len(st.session_state.search_results[page_num])
-                                
                                 st.markdown(f"""
                                     <div class="pdf-preview">
-                                        <div style="
-                                            position: relative;
-                                            {border_style}
-                                            border-radius: 10px;
-                                            margin-bottom: 1.5rem;
-                                        ">
-                                            <img src="data:image/png;base64,{img_base64}" 
-                                                style="width:100%;
-                                                cursor: pointer;
-                                                border-radius: 8px;"
-                                                onclick="window.parent.document.querySelector('section.main').scrollTo(0, 0)">
-                                            {"<div style='
-                                                position: absolute;
-                                                top: 5px;
-                                                right: 5px;
-                                                background: #FFD700DD;
-                                                color: #000;
-                                                padding: 2px 8px;
-                                                border-radius: 12px;
-                                                font-size: 0.8rem;
-                                                font-weight: bold;
-                                            '>🔍 {matches_count}</div>" 
-                                            if page_num in st.session_state.search_results else ""}
-                                            <p style="text-align:center; 
-                                                font-size: 0.9rem; 
-                                                color: #888;
-                                                margin: 0.5rem 0 1.5rem 0">
-                                                Page {page_num}
-                                            </p>
-                                        </div>
+                                        <img src="data:image/png;base64,{img_base64}" 
+                                            style="width:100%;
+                                            cursor: pointer;"
+                                            onclick="window.parent.document.querySelector('section.main').scrollTo(0, 0)">
+                                        <p style="text-align:center; 
+                                            font-size: 0.9rem; 
+                                            color: #888;
+                                            margin: 0.5rem 0 1.5rem 0">
+                                            Page {i + 1}
+                                        </p>
                                     </div>
                                 """, unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
@@ -165,4 +241,5 @@ def main():
     else:
         st.warning("📌 Please upload a PDF or enter a URL to get started")
 
-# ... [Keep rest of the code] ...
+if __name__ == "__main__":
+    main()
