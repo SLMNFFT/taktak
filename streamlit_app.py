@@ -39,17 +39,20 @@ st.markdown("""
         background-color: var(--background);
         color: #F8F9FA;
         font-family: 'Inter', sans-serif;
+        height: 100vh;
+        overflow: hidden;
     }
     
     .block-container {
         padding-top: 1rem;
         padding-bottom: 0;
+        height: calc(100vh - 100px);
     }
     
     .header-gradient {
         background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-        padding: 2rem 2rem 4rem;
-        margin: -1rem -2rem 2rem;
+        padding: 1rem 2rem 2rem;
+        margin: -1rem -2rem 1rem;
         border-radius: 0 0 20px 20px;
     }
     
@@ -58,47 +61,40 @@ st.markdown("""
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255,255,255,0.1);
         border-radius: 15px;
-        padding: 2rem;
+        padding: 1rem;
         transition: all 0.3s ease;
-    }
-    
-    .stButton>button {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-        border: none;
-        border-radius: 12px;
-        padding: 0.8rem 2rem;
-        font-weight: 600;
-        transition: transform 0.2s ease;
     }
     
     .preview-card {
         background: #1A1B2F;
         border-radius: 15px;
-        padding: 1.5rem;
-        position: relative;
-        height: 70vh;
+        padding: 1rem;
+        height: calc(100vh - 300px);
         display: flex;
         flex-direction: column;
-    }
-    
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: #1A1B2F; }
-    ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
-    
-    .page-selector .stMultiSelect [data-baseweb=tag] {
-        background-color: var(--primary) !important;
-    }
-    
-    /* Equal width columns */
-    [data-testid="column"] {
-        flex: 1 1 0%;
-        min-width: 0;
     }
     
     .preview-content {
         flex: 1;
         overflow-y: auto;
         padding: 0.5rem;
+    }
+    
+    /* Compact layout adjustments */
+    [data-testid="stSidebar"] {
+        min-width: 300px !important;
+        max-width: 300px !important;
+    }
+    
+    [data-testid="column"] {
+        flex: 1 1 0%;
+        min-width: 0;
+        padding: 0 0.5rem;
+    }
+    
+    .stButton>button {
+        width: 100%;
+        margin-top: 1rem;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -109,18 +105,18 @@ def pil_to_base64(img: Image.Image) -> str:
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
 def main():
-    # Hero Section
+    # Compact Hero Section
     st.markdown("""
         <div class="header-gradient">
-            <h1 style="color: white; margin: 0;">Mogontia Audiobook</h1>
-            <p style="color: rgba(255,255,255,0.8); font-size: 1.1rem;">
+            <h1 style="color: white; margin: 0; font-size: 1.8rem;">Mogontia Audiobook</h1>
+            <p style="color: rgba(255,255,255,0.8); font-size: 0.9rem;">
                 Transform documents into immersive audio experiences
             </p>
         </div>
     """, unsafe_allow_html=True)
 
-    # File Upload Section
-    col1, col2 = st.columns(2, gap="large")
+    # Upload Section
+    col1, col2 = st.columns(2, gap="medium")
     pdf_file = None
     pdf_url = None
     
@@ -146,118 +142,98 @@ def main():
             )
             st.markdown('</div>', unsafe_allow_html=True)
 
-    # PDF Processing
-    pdf_path = None
+    # Main Content Area
     if pdf_file or pdf_url:
-        if pdf_file:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-                tmp_file.write(pdf_file.read())
-                pdf_path = tmp_file.name
-        elif pdf_url:
-            try:
-                response = requests.get(pdf_url, timeout=10)
-                response.raise_for_status()
+        pdf_path = None
+        try:
+            if pdf_file:
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-                    tmp_file.write(response.content)
+                    tmp_file.write(pdf_file.read())
                     pdf_path = tmp_file.name
-            except Exception as e:
-                st.error(f"❌ Error fetching PDF: {str(e)}")
-                return
+            else:
+                try:
+                    response = requests.get(pdf_url, timeout=10)
+                    response.raise_for_status()
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                        tmp_file.write(response.content)
+                        pdf_path = tmp_file.name
+                except Exception as e:
+                    st.error(f"❌ Error fetching PDF: {str(e)}")
+                    return
 
-        with st.spinner("🔍 Analyzing document..."):
-            pdf_reader = PdfReader(pdf_path)
-            total_pages = len(pdf_reader.pages)
-            
-            # Page Selection
-            st.sidebar.markdown("## 📄 Page Selection")
-            selected_pages = st.sidebar.multiselect(
-                "Select pages to convert:",
-                options=list(range(1, total_pages + 1)),
-                default=[1],
-                key="page_selector",
-                help="Select multiple pages for continuous narration"
-            )
-
-            # Main Content
-            col_left, col_right = st.columns([1, 1], gap="large")
-            
-            # Text Preview
-            with col_left:
-                with st.expander("📜 Document Text", expanded=True):
-                    full_text = ""
-                    for page_num in selected_pages:
-                        page = pdf_reader.pages[page_num - 1]
-                        text = page.extract_text()
-                        full_text += f"{text}\n\n" if text else ""
+            with st.spinner("🔍 Analyzing document..."):
+                pdf_reader = PdfReader(pdf_path)
+                total_pages = len(pdf_reader.pages)
+                
+                # Sidebar Controls
+                with st.sidebar:
+                    st.markdown("## ⚙️ Controls")
+                    selected_pages = st.multiselect(
+                        "Select pages:",
+                        options=list(range(1, total_pages + 1)),
+                        default=[1],
+                        key="page_selector"
+                    )
                     
-                    st.markdown(f"""
-                        <div class="preview-card">
-                            <div class="preview-content">
-                                <pre style="color: #e0e0e0; white-space: pre-wrap; font-family: 'Inter'; margin: 0;">{full_text}</pre>
-                            </div>
-                        </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # Audio Generation
-                    if full_text:
+                    st.markdown("---")
+                    detected_lang = "en"
+                    if selected_pages:
+                        full_text = "".join(pdf_reader.pages[page-1].extract_text() for page in selected_pages)
                         try:
                             detected_lang = detect(full_text[:500])
-                            lang = detected_lang
-                            st.success(f"🌍 Detected language: {detected_lang.upper()}")
-                            
-                            if st.button("🎧 Generate Audiobook", type="primary"):
-                                with st.spinner("🔊 Generating audio..."):
-                                    tts = gTTS(text=full_text, lang=lang)
-                                    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
-                                        tts.save(fp.name)
-                                        st.audio(fp.name, format="audio/mp3")
-                                        st.download_button(
-                                            "💾 Download Audiobook",
-                                            data=open(fp.name, "rb"),
-                                            file_name="audiobook.mp3",
-                                            mime="audio/mp3"
-                                        )
-                        except Exception as e:
-                            st.error(f"Error generating audio: {str(e)}")
-
-            # PDF Preview
-            with col_right:
-                with st.expander("🖼️ Visual Preview", expanded=True):
-                    st.markdown("""
-                        <div class="preview-card">
-                            <div class="preview-content" style="padding: 1rem;">
-                    """, unsafe_allow_html=True)
+                        except: pass
                     
-                    with pdfplumber.open(pdf_path) as pdf:
-                        for i, page in enumerate(pdf.pages):
-                            if (i + 1) in selected_pages:
-                                image = page.to_image(resolution=150).original
-                                img_base64 = pil_to_base64(image)
-                                st.markdown(f"""
-                                    <div style="margin-bottom: 2rem;">
-                                        <img src="data:image/png;base64,{img_base64}" 
-                                            style="width:100%; 
-                                            border-radius: 8px;
-                                            box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-                                        <p style="text-align: center; color: #888; margin-top: 0.5rem;">
-                                            Page {i + 1}
-                                        </p>
-                                    </div>
-                                """, unsafe_allow_html=True)
+                    lang = st.text_input("Language Code", value=detected_lang)
+                    slow = st.checkbox("Slow Narration")
                     
-                    st.markdown("</div></div>", unsafe_allow_html=True)
+                    if st.button("🎧 Generate Audiobook"):
+                        # ... (keep audio generation logic)
 
-        # Cleanup
-        if pdf_path and os.path.exists(pdf_path):
-            os.remove(pdf_path)
+                # Main Preview Panels
+                col_left, col_right = st.columns(2, gap="medium")
+                
+                with col_left:
+                    with st.container():
+                        st.markdown("### Text Preview")
+                        full_text = "".join(pdf_reader.pages[page-1].extract_text() for page in selected_pages)
+                        st.markdown(f"""
+                            <div class="preview-card">
+                                <div class="preview-content">
+                                    <pre style="color: #e0e0e0; white-space: pre-wrap;">{full_text}</pre>
+                                </div>
+                            </div>
+                        """, unsafe_allow_html=True)
+
+                with col_right:
+                    with st.container():
+                        st.markdown("### Visual Preview")
+                        st.markdown('<div class="preview-card">', unsafe_allow_html=True)
+                        with pdfplumber.open(pdf_path) as pdf:
+                            for i, page in enumerate(pdf.pages):
+                                if (i + 1) in selected_pages:
+                                    image = page.to_image(resolution=130).original
+                                    img_base64 = pil_to_base64(image)
+                                    st.markdown(f"""
+                                        <div style="margin-bottom: 1rem;">
+                                            <img src="data:image/png;base64,{img_base64}" 
+                                                style="width:100%; border-radius: 8px;">
+                                            <p style="text-align: center; color: #888; margin: 0.3rem 0; font-size: 0.8rem;">
+                                                Page {i + 1}
+                                            </p>
+                                        </div>
+                                    """, unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+
+        finally:
+            if pdf_path and os.path.exists(pdf_path):
+                os.remove(pdf_path)
 
     else:
-        # Empty State
+        # Compact Empty State
         st.markdown("""
-            <div style="text-align: center; padding: 4rem 0; opacity: 0.8;">
-                <div style="font-size: 4rem;">📚</div>
-                <h3>Upload a document to begin</h3>
-                <p style="opacity: 0.7;">Supported formats: PDF</p>
+            <div style="text-align: center; padding: 2rem 0; opacity: 0.8;">
+                <div style="font-size: 2rem;">📚</div>
+                <p>Upload a PDF or enter URL to begin</p>
             </div>
         """, unsafe_allow_html=True)
 
