@@ -10,13 +10,20 @@ from PIL import Image
 from io import BytesIO
 import base64
 
-st.set_page_config(layout="wide")
-st.title("📖 Mogontia Audiobook Generator")
+# Page configuration
+st.set_page_config(page_title="Mogontia Audiobook Generator", layout="wide")
 
-# PDF Upload or URL
+# Title
+st.markdown("""
+    <h1 style="text-align: center; color: #b30059;">📖 Mogontia Audiobook Generator</h1>
+    <p style="text-align: center; color: #888;">Dive into mystery and fiction — turn any book into an immersive audio experience.</p>
+""", unsafe_allow_html=True)
+
+# Upload section
 pdf_file = st.file_uploader("📂 Upload a PDF file", type=["pdf"])
 pdf_url = st.text_input("🌐 Or provide a URL to an online PDF")
 
+# Helper functions
 def fetch_pdf_from_url(url):
     try:
         response = requests.get(url)
@@ -24,10 +31,9 @@ def fetch_pdf_from_url(url):
             return response.content
         else:
             st.error("❌ Failed to download PDF from URL.")
-            return None
     except Exception as e:
         st.error(f"❌ Error fetching PDF from URL: {e}")
-        return None
+    return None
 
 def pil_to_base64(img: Image.Image) -> str:
     buf = BytesIO()
@@ -35,7 +41,7 @@ def pil_to_base64(img: Image.Image) -> str:
     byte_im = buf.getvalue()
     return base64.b64encode(byte_im).decode("utf-8")
 
-# Save PDF to temp file
+# Save the uploaded or fetched PDF
 if pdf_file:
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
         tmp_file.write(pdf_file.read())
@@ -49,6 +55,7 @@ elif pdf_url:
 else:
     pdf_path = None
 
+# Main app layout
 if pdf_path:
     col1, col2 = st.columns([2, 3])
 
@@ -66,16 +73,15 @@ if pdf_path:
         if page_numbers:
             full_text = ""
             for i in page_numbers:
-                page = pdf_reader.pages[i - 1]
-                text = page.extract_text()
+                text = pdf_reader.pages[i - 1].extract_text()
                 if text:
                     full_text += text + "\n"
 
-            st.subheader("📝 Extracted Text")
+            st.markdown("### 📝 Extracted Text")
             st.markdown(
                 f"""
-                <div style="height: 500px; overflow-y: auto; padding: 1rem; background-color: black; border: 1px solid #ddd; border-radius: 5px;">
-                    <pre style="white-space: pre-wrap; color: white;">{full_text}</pre>
+                <div style="height: 400px; overflow-y: auto; background-color: #1e1e1e; padding: 1rem; border-radius: 8px; border: 1px solid #444;">
+                    <pre style="color: #eee; white-space: pre-wrap;">{full_text}</pre>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -112,22 +118,13 @@ if pdf_path:
             st.info("ℹ️ Please select at least one page.")
 
     with col2:
-        st.subheader("👁️ PDF Preview")
-
+        st.markdown("### 👁️ PDF Preview")
         with open(pdf_path, "rb") as f:
-            st.download_button(
-                label="📥 Open or Download PDF",
-                data=f,
-                file_name="your_file.pdf",
-                mime="application/pdf"
-            )
+            st.download_button("📥 Download PDF", f, "your_file.pdf", mime="application/pdf")
 
-        st.markdown(
-            f"""
-            <div style="height: 500px; overflow-y: auto; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; border-radius: 5px;">
-            """,
-            unsafe_allow_html=True
-        )
+        st.markdown("""
+            <div style="height: 500px; overflow-y: scroll; padding: 1rem; border: 1px solid #ccc; background-color: #111; border-radius: 8px;">
+        """, unsafe_allow_html=True)
 
         with pdfplumber.open(pdf_path) as pdf:
             for i, page in enumerate(pdf.pages):
@@ -135,9 +132,9 @@ if pdf_path:
                     image = page.to_image(resolution=150).original
                     image_base64 = pil_to_base64(image)
                     st.markdown(f"""
-                        <div style="margin-bottom: 20px; text-align: center;">
-                            <img src="data:image/png;base64,{image_base64}" style="width: 100%;" />
-                            <p style="color: #666;">Page {i + 1}</p>
+                        <div style="margin-bottom: 30px; text-align: center;">
+                            <img src="data:image/png;base64,{image_base64}" style="width: 100%; border-radius: 4px;"/>
+                            <p style="color: #bbb;">Page {i + 1}</p>
                         </div>
                     """, unsafe_allow_html=True)
 
