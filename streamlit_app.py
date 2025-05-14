@@ -5,11 +5,10 @@ from gtts import gTTS
 import tempfile
 import os
 import requests
-import pdfplumber
 from PIL import Image
 from io import BytesIO
 import base64
-import streamlit.components.v1 as components
+import fitz  # PyMuPDF
 
 st.set_page_config(page_title="Mogontia Audiobook", layout="wide", page_icon="📖")
 
@@ -93,26 +92,21 @@ if pdf_path:
     pdf_reader = PdfReader(pdf_path)
     total_pages = len(pdf_reader.pages)
 
-    if "selected_pages" not in st.session_state:
-        st.session_state["selected_pages"] = [1]
-
     st.sidebar.header("📄 Page Selection")
     selected_pages = st.sidebar.multiselect(
         "Choose which pages to narrate",
         options=list(range(1, total_pages + 1)),
-        default=st.session_state["selected_pages"]
+        default=[1]
     )
-    st.session_state["selected_pages"] = selected_pages
 
     show_all_pages = st.sidebar.checkbox("📚 Show All Pages in Preview", value=False)
-    full_preview_mode = st.sidebar.checkbox("🖼️ Full Preview with Double-Click Selection", value=False)
 
     col_left, col_right = st.columns([1.5, 2])
 
     with col_left:
         with st.expander("🔍 Extracted Story"):
             full_text = ""
-            for page_num in st.session_state["selected_pages"]:
+            for page_num in selected_pages:
                 page = pdf_reader.pages[page_num - 1]
                 text = page.extract_text()
                 if text:
@@ -152,58 +146,15 @@ if pdf_path:
 
     with col_right:
         with st.expander("🖼️ Preview Pages", expanded=True):
-            if full_preview_mode:
-                with pdfplumber.open(pdf_path) as pdf:
-                    html = "<div style='display: flex; flex-wrap: wrap; gap: 12px;'>"
-                    for i, page in enumerate(pdf.pages):
-                        image = page.to_image(resolution=100).original
-                        img_base64 = pil_to_base64(image)
-                        html += f"""
-                            <div class="page" data-page="{i + 1}" style="cursor:pointer;">
-                                <img src="data:image/png;base64,{img_base64}" style="width:130px; border-radius:8px; border:2px solid #333;">
-                                <div style="text-align:center; color:#aaa; font-size:12px;">Page {i + 1}</div>
-                            </div>
-                        """
-                    html += "</div>"
-
-                    html += """
-                        <script>
-                        const pages = document.querySelectorAll('.page');
-                        pages.forEach(p => {
-                            p.ondblclick = function() {
-                                const page = parseInt(this.getAttribute("data-page"));
-                                const payload = {{type: "SELECT_PAGE", page: page}};
-                                window.parent.postMessage(payload, "*");
-                            };
-                        });
-                        </script>
-                    """
-                    components.html(html, height=600, scrolling=True)
-
-                    st.markdown("""
-                        <script>
-                        window.addEventListener("message", (event) => {
-                            if (event.data.type === "SELECT_PAGE") {
-                                const page = event.data.page;
-                                const iframe = window.parent.document.querySelector("iframe");
-                                iframe.contentWindow.postMessage({ isStreamlitMessage: true, type: "streamlit:setComponentValue", value: page }, "*");
-                            }
-                        });
-                        </script>
-                    """, unsafe_allow_html=True)
-
-                    # Simulate receiving the page selection (Streamlit limitation workaround)
-                    selected_page = st.number_input("🖱️ Last Double-Clicked Page", min_value=1, max_value=total_pages, step=1)
-                    if selected_page not in st.session_state["selected_pages"]:
-                        st.session_state["selected_pages"].append(selected_page)
-                        st.success(f"Page {selected_page} added to narration list.")
-            else:
-                st.markdown('<div class="pdf-preview-scroll">', unsafe_allow_html=True)
-                with pdfplumber.open(pdf_path) as pdf:
-                    for i, page in enumerate(pdf.pages):
-                        show_it = show_all_pages or ((i + 1) in st.session_state["selected_pages"])
+            st.markdown('<div class="pdf-preview-scroll">', unsafe_allow_html=True)
+            try:
+                with fitz.open(pdf_path) as doc:
+                    for i in range(len(doc)):
+                        show_it = show_all_pages or ((i + 1) in selected_pages)
                         if show_it:
-                            image = page.to_image(resolution=150).original
+                            page = doc.load_page(i)
+                            pix = page.get_pixmap(dpi=150)
+                            image = Image.open(BytesIO(pix.tobytes("png")))
                             img_base64 = pil_to_base64(image)
                             st.markdown(f"""
                                 <div class="pdf-preview">
@@ -211,7 +162,9 @@ if pdf_path:
                                     <p style="text-align:center; font-size: 14px; color: #999;">Page {i + 1}</p>
                                 </div>
                             """, unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+            except Exception as e:
+                st.error(f"⚠️ Could not render preview: {e}")
+            st.markdown('</div>', unsafe_allow_html=True)
 
 else:
     st.warning("🕵️ Please upload a PDF or paste a URL to begin your audiobook journey.")
