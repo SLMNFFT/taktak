@@ -5,12 +5,11 @@ from gtts import gTTS
 import tempfile
 import os
 import requests
-import pdfplumber
-from PIL import Image
-from io import BytesIO
 import base64
 import fitz  # PyMuPDF
-from streamlit_click_detector import click_detector
+from PIL import Image
+from io import BytesIO
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Mogontia Audiobook", layout="wide", page_icon="📖")
 
@@ -82,13 +81,21 @@ elif pdf_url:
 if 'selected_pages' not in st.session_state:
     st.session_state.selected_pages = [1]
 
-# Main layout if PDF is loaded
+# Handle click event
+clicked_page = st.experimental_get_query_params().get("clicked_page", [None])[0]
+if clicked_page and clicked_page.isdigit():
+    clicked_page = int(clicked_page)
+    if clicked_page in st.session_state.selected_pages:
+        st.session_state.selected_pages.remove(clicked_page)
+    else:
+        st.session_state.selected_pages.append(clicked_page)
+
 if pdf_path:
     pdf_reader = PdfReader(pdf_path)
     total_pages = len(pdf_reader.pages)
 
     st.sidebar.header("📄 Page Selection")
-    st.sidebar.write("You can also click on a page preview to select/unselect.")
+    st.sidebar.write("You can also double-click on a preview to select/unselect.")
     st.sidebar.multiselect(
         "Selected Pages",
         options=list(range(1, total_pages + 1)),
@@ -153,23 +160,17 @@ if pdf_path:
                     img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
                     img_base64 = pil_to_base64(img)
 
-                    # Click detection
-                    clicked = click_detector(
+                    # HTML+JS for double-click handling
+                    components.html(
                         f"""
-                        <div class="pdf-preview" style="margin-bottom:15px;">
-                            <img src="data:image/png;base64,{img_base64}" style="width:100%;" />
-                            <p style="text-align:center; font-size: 14px; color: #999;">Page {i + 1}</p>
+                        <div ondblclick="window.parent.location.search='?clicked_page={i+1}'"
+                             style="margin-bottom:20px; cursor:pointer;">
+                            <img src="data:image/png;base64,{img_base64}" style="width:100%; border: 2px solid #444; border-radius: 10px;" />
+                            <p style="text-align:center; font-size: 14px; color: #ccc;">Page {i + 1}</p>
                         </div>
                         """,
-                        key=f"page_{i}"
+                        height=400,
                     )
-
-                    if clicked:
-                        page_num = i + 1
-                        if page_num in st.session_state.selected_pages:
-                            st.session_state.selected_pages.remove(page_num)
-                        else:
-                            st.session_state.selected_pages.append(page_num)
 
             st.markdown('</div>', unsafe_allow_html=True)
 else:
