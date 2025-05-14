@@ -10,96 +10,84 @@ from io import BytesIO
 import base64
 import os
 
-# Page configuration
 st.set_page_config(
-    page_title="Mogontia Audiobook Generator",
-    page_icon="📖",
+    page_title="Mogontia Audiobook",
     layout="wide",
+    page_icon="🎧",
     menu_items={
         'Get Help': 'https://github.com/mogontia/audiobook-gen',
         'Report a bug': "https://github.com/mogontia/audiobook-gen/issues",
-        'About': "# 🎧 Mogontia Audiobook Generator\nBeta Version 0.2"
+        'About': """
+        ## 🎧 Mogontia Audiobook Generator 
+        **Version 2.0**  
+        Transform documents into immersive audio experiences  
+        """
     }
 )
 
-# 🎨 Custom Styles
+# Modern UI Styles
 st.markdown("""
     <style>
     :root {
-        --primary: #1ed760;
-        --secondary: #535353;
-        --dark: #0d0d0d;
-        --light: #e0e0e0;
-        --accent: #1db954;
+        --primary: #25C9A5;
+        --secondary: #2B2D42;
+        --accent: #FF6B6B;
+        --background: #0F0F1C;
     }
+    
     html, body, [class*="css"] {
-        background-color: var(--dark);
-        color: var(--light);
-        font-family: 'Georgia', serif;
+        background-color: var(--background);
+        color: #F8F9FA;
+        font-family: 'Inter', sans-serif;
     }
+    
     .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
+        padding-top: 1rem;
+        padding-bottom: 0;
     }
+    
+    .header-gradient {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        padding: 2rem 2rem 4rem;
+        margin: -1rem -2rem 2rem;
+        border-radius: 0 0 20px 20px;
+    }
+    
+    .upload-card {
+        background: rgba(43, 45, 66, 0.5);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 15px;
+        padding: 2rem;
+        transition: all 0.3s ease;
+    }
+    
     .stButton>button {
-        background-color: var(--secondary);
-        color: white;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
         border: none;
-        border-radius: 20px;
-        padding: 0.6rem 1.5rem;
-        transition: 0.3s ease;
-        font-weight: bold;
+        border-radius: 12px;
+        padding: 0.8rem 2rem;
+        font-weight: 600;
+        transition: transform 0.2s ease;
     }
-    .stButton>button:hover {
-        background-color: var(--primary);
-        color: black;
-        transform: scale(1.03);
+    
+    .preview-card {
+        background: #1A1B2F;
+        border-radius: 15px;
+        padding: 1.5rem;
+        position: relative;
+        transition: all 0.3s ease;
     }
-    .stDownloadButton>button {
-        background-color: var(--accent);
-        border-radius: 20px;
-        color: black;
-        font-weight: bold;
-    }
-    .pdf-preview-scroll {
-        max-height: 75vh;
-        overflow-y: auto;
-        border: 1px solid #333;
-        border-radius: 10px;
-        padding: 1rem;
-        scrollbar-width: thin;
-    }
-    .pdf-preview img {
-        width: 100%;
-        border-radius: 10px;
-        margin-bottom: 1rem;
-        border: 2px solid #444;
-        transition: transform 0.2s;
-    }
-    .pdf-preview img:hover {
-        transform: scale(1.015);
-    }
-    .highlight-box {
-        background-color: #1a1a1a;
-        padding: 1rem;
-        border-radius: 10px;
-        color: #ccc;
-        font-size: 0.95rem;
-        max-height: 60vh;
-        overflow-y: auto;
+    
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #1A1B2F; }
+    ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
+    
+    .page-selector .stMultiSelect [data-baseweb=tag] {
+        background-color: var(--primary) !important;
     }
     </style>
 """, unsafe_allow_html=True)
-
-
-def fetch_pdf_from_url(url):
-    try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        return response.content
-    except Exception as e:
-        st.error(f"❌ Error fetching PDF: {str(e)}")
-        return None
 
 def pil_to_base64(img: Image.Image) -> str:
     buf = BytesIO()
@@ -107,112 +95,157 @@ def pil_to_base64(img: Image.Image) -> str:
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
 def main():
-    st.title("📖 Mogontia — Audiobook Generator (Beta V0.2)")
+    # Hero Section
+    st.markdown("""
+        <div class="header-gradient">
+            <h1 style="color: white; margin: 0;">Mogontia Audiobook</h1>
+            <p style="color: rgba(255,255,255,0.8); font-size: 1.1rem;">
+                Transform documents into immersive audio experiences
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
 
-    # Upload Section
-    st.header("📂 Upload or Link Your PDF")
-    col1, col2 = st.columns(2)
-
+    # File Upload Section
+    col1, col2 = st.columns(2, gap="large")
+    pdf_file = None
+    pdf_url = None
+    
     with col1:
-        pdf_file = st.file_uploader("Upload a PDF file", type=["pdf"])
-
+        with st.container():
+            st.markdown('<div class="upload-card">', unsafe_allow_html=True)
+            pdf_file = st.file_uploader(
+                "📤 Upload PDF", 
+                type=["pdf"],
+                help="Supports PDF documents up to 200MB",
+                key="file_upload"
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+    
     with col2:
-        pdf_url = st.text_input("Or paste a PDF URL", placeholder="https://example.com/sample.pdf")
+        with st.container():
+            st.markdown('<div class="upload-card">', unsafe_allow_html=True)
+            pdf_url = st.text_input(
+                "🌐 PDF URL",
+                placeholder="Enter document URL...",
+                help="Direct link to PDF file",
+                key="url_input"
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
 
+    # PDF Processing
     pdf_path = None
-    if pdf_file:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-            tmp_file.write(pdf_file.read())
-            pdf_path = tmp_file.name
-    elif pdf_url.strip():
-        content = fetch_pdf_from_url(pdf_url)
-        if content:
+    if pdf_file or pdf_url:
+        if pdf_file:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-                tmp_file.write(content)
+                tmp_file.write(pdf_file.read())
                 pdf_path = tmp_file.name
+        elif pdf_url:
+            try:
+                response = requests.get(pdf_url, timeout=10)
+                response.raise_for_status()
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                    tmp_file.write(response.content)
+                    pdf_path = tmp_file.name
+            except Exception as e:
+                st.error(f"❌ Error fetching PDF: {str(e)}")
+                return
 
-    # Process PDF
-    if pdf_path:
-        try:
-            with st.spinner("🔍 Reading the PDF..."):
-                reader = PdfReader(pdf_path)
-                total_pages = len(reader.pages)
-
-            st.sidebar.header("⚙️ Conversion Settings")
+        with st.spinner("🔍 Analyzing document..."):
+            pdf_reader = PdfReader(pdf_path)
+            total_pages = len(pdf_reader.pages)
+            
+            # Page Selection
+            st.sidebar.markdown("## 📄 Page Selection")
             selected_pages = st.sidebar.multiselect(
-                "Select pages to convert",
+                "Select pages to convert:",
                 options=list(range(1, total_pages + 1)),
-                default=[1]
+                default=[1],
+                key="page_selector",
+                help="Select multiple pages for continuous narration"
             )
 
-            st.sidebar.markdown("---")
-            show_all = st.sidebar.checkbox("📑 Show full document preview", value=False)
+            # Main Content
+            col_left, col_right = st.columns([1.2, 1], gap="large")
+            
+            # Text Preview
+            with col_left:
+                with st.expander("📜 Document Text", expanded=True):
+                    full_text = ""
+                    for page_num in selected_pages:
+                        page = pdf_reader.pages[page_num - 1]
+                        text = page.extract_text()
+                        full_text += f"{text}\n\n" if text else ""
+                    
+                    st.markdown(f"""
+                        <div class="preview-card">
+                            <div style="max-height: 60vh; overflow-y: auto;">
+                                <pre style="color: #e0e0e0; white-space: pre-wrap; font-family: 'Inter';">{full_text}</pre>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Audio Generation
+                    if full_text:
+                        try:
+                            detected_lang = detect(full_text[:500])
+                            lang = detected_lang
+                            st.success(f"🌍 Detected language: {detected_lang.upper()}")
+                            
+                            if st.button("🎧 Generate Audiobook", type="primary"):
+                                with st.spinner("🔊 Generating audio..."):
+                                    tts = gTTS(text=full_text, lang=lang)
+                                    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
+                                        tts.save(fp.name)
+                                        st.audio(fp.name, format="audio/mp3")
+                                        st.download_button(
+                                            "💾 Download Audiobook",
+                                            data=open(fp.name, "rb"),
+                                            file_name="audiobook.mp3",
+                                            mime="audio/mp3"
+                                        )
+                        except Exception as e:
+                            st.error(f"Error generating audio: {str(e)}")
 
-            with st.sidebar.expander("🌐 Language & Speed"):
-                slow = st.checkbox("Slow narration")
-                lang_override = st.text_input("Language override (e.g., en, de, fr)", value="auto")
+            # PDF Preview
+            with col_right:
+                with st.expander("🖼️ Visual Preview", expanded=True):
+                    st.markdown("""
+                        <div class="preview-card">
+                            <div style="max-height: 70vh; overflow-y: auto; padding: 1rem;">
+                    """, unsafe_allow_html=True)
+                    
+                    with pdfplumber.open(pdf_path) as pdf:
+                        for i, page in enumerate(pdf.pages):
+                            if (i + 1) in selected_pages:
+                                image = page.to_image(resolution=150).original
+                                img_base64 = pil_to_base64(image)
+                                st.markdown(f"""
+                                    <div style="margin-bottom: 2rem;">
+                                        <img src="data:image/png;base64,{img_base64}" 
+                                            style="width:100%; 
+                                            border-radius: 8px;
+                                            box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                                        <p style="text-align: center; color: #888; margin-top: 0.5rem;">
+                                            Page {i + 1}
+                                        </p>
+                                    </div>
+                                """, unsafe_allow_html=True)
+                    
+                    st.markdown("</div></div>", unsafe_allow_html=True)
 
-            col_text, col_preview = st.columns([1.4, 1.6])
+        # Cleanup
+        if pdf_path and os.path.exists(pdf_path):
+            os.remove(pdf_path)
 
-            # Text Extraction
-            with col_text:
-                st.subheader("📜 Extracted Text")
-                full_text = ""
-                for page_num in selected_pages:
-                    text = reader.pages[page_num - 1].extract_text()
-                    if text:
-                        full_text += text + "\n\n"
-
-                if full_text.strip():
-                    st.markdown(f"<div class='highlight-box'><pre>{full_text}</pre></div>", unsafe_allow_html=True)
-                    try:
-                        detected = detect(full_text[:500])
-                        lang = lang_override if lang_override != "auto" else detected
-                        st.success(f"🌍 Detected: {detected.upper()} | Using: {lang.upper()}")
-                    except Exception as e:
-                        st.warning(f"⚠️ Language detection failed: {e}")
-                        lang = "en"
-
-                    if st.button("🎧 Generate Audiobook"):
-                        with st.spinner("🔊 Generating MP3..."):
-                            try:
-                                tts = gTTS(text=full_text, lang=lang, slow=slow)
-                                with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as audio_fp:
-                                    tts.save(audio_fp.name)
-                                    st.audio(audio_fp.name, format="audio/mp3")
-                                    st.download_button(
-                                        label="💾 Download Audiobook",
-                                        data=open(audio_fp.name, "rb"),
-                                        file_name="audiobook.mp3",
-                                        mime="audio/mp3"
-                                    )
-                            except Exception as e:
-                                st.error(f"❌ Failed to generate audio: {e}")
-                else:
-                    st.info("❗ No text found in selected pages.")
-
-            # Preview Section
-            with col_preview:
-                st.subheader("🖼️ PDF Page Previews")
-                st.markdown('<div class="pdf-preview-scroll">', unsafe_allow_html=True)
-                with pdfplumber.open(pdf_path) as pdf:
-                    for i, page in enumerate(pdf.pages):
-                        if show_all or (i + 1) in selected_pages:
-                            img = page.to_image(resolution=150).original
-                            img_b64 = pil_to_base64(img)
-                            st.markdown(f"""
-                                <div class="pdf-preview">
-                                    <img src="data:image/png;base64,{img_b64}" />
-                                    <p style="text-align:center; font-size:0.85rem; color:#999;">Page {i+1}</p>
-                                </div>
-                            """, unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
-
-        finally:
-            if os.path.exists(pdf_path):
-                os.remove(pdf_path)
     else:
-        st.info("📎 Upload or enter a URL to start generating an audiobook.")
+        # Empty State
+        st.markdown("""
+            <div style="text-align: center; padding: 4rem 0; opacity: 0.8;">
+                <div style="font-size: 4rem;">📚</div>
+                <h3>Upload a document to begin</h3>
+                <p style="opacity: 0.7;">Supported formats: PDF</p>
+            </div>
+        """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
