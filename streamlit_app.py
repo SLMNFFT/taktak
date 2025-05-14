@@ -9,11 +9,10 @@ import pdfplumber
 from PIL import Image
 from io import BytesIO
 import base64
-import fitz  # PyMuPDF
-from streamlit_click_detector import click_detector
 
 st.set_page_config(page_title="Mogontia Audiobook", layout="wide", page_icon="📖")
 
+# Custom styles
 st.markdown("""
     <style>
     html, body, [class*="css"]  {
@@ -24,6 +23,16 @@ st.markdown("""
     .block-container {
         padding-top: 2rem;
         padding-bottom: 2rem;
+    }
+    .stButton>button {
+        color: white;
+        background-color: #262626;
+        border-radius: 8px;
+        border: 1px solid #444;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        background-color: #404040;
     }
     .pdf-preview-scroll {
         max-height: 80vh;
@@ -36,7 +45,6 @@ st.markdown("""
         border: 2px solid #333;
         border-radius: 10px;
         margin-bottom: 10px;
-        cursor: pointer;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -66,6 +74,7 @@ def pil_to_base64(img: Image.Image) -> str:
     img.save(buf, format="PNG")
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
+# Handle upload or download
 pdf_path = None
 if pdf_file:
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
@@ -78,22 +87,16 @@ elif pdf_url:
             tmp_file.write(content)
             pdf_path = tmp_file.name
 
-# Page tracking state
-if 'selected_pages' not in st.session_state:
-    st.session_state.selected_pages = [1]
-
 # Main layout if PDF is loaded
 if pdf_path:
     pdf_reader = PdfReader(pdf_path)
     total_pages = len(pdf_reader.pages)
 
     st.sidebar.header("📄 Page Selection")
-    st.sidebar.write("You can also click on a page preview to select/unselect.")
-    st.sidebar.multiselect(
-        "Selected Pages",
+    selected_pages = st.sidebar.multiselect(
+        "Choose which pages to narrate",
         options=list(range(1, total_pages + 1)),
-        default=st.session_state.selected_pages,
-        key="selected_pages"
+        default=[1]
     )
 
     show_all_pages = st.sidebar.checkbox("📚 Show All Pages in Preview", value=False)
@@ -103,7 +106,7 @@ if pdf_path:
     with col_left:
         with st.expander("🔍 Extracted Story"):
             full_text = ""
-            for page_num in st.session_state.selected_pages:
+            for page_num in selected_pages:
                 page = pdf_reader.pages[page_num - 1]
                 text = page.extract_text()
                 if text:
@@ -144,34 +147,19 @@ if pdf_path:
     with col_right:
         with st.expander("🖼️ Preview Pages", expanded=True):
             st.markdown('<div class="pdf-preview-scroll">', unsafe_allow_html=True)
-
-            doc = fitz.open(pdf_path)
-            for i in range(len(doc)):
-                show_it = show_all_pages or ((i + 1) in st.session_state.selected_pages)
-                if show_it:
-                    pix = doc[i].get_pixmap(dpi=100)
-                    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-                    img_base64 = pil_to_base64(img)
-
-                    # Click detection
-                    clicked = click_detector(
-                        f"""
-                        <div class="pdf-preview" style="margin-bottom:15px;">
-                            <img src="data:image/png;base64,{img_base64}" style="width:100%;" />
-                            <p style="text-align:center; font-size: 14px; color: #999;">Page {i + 1}</p>
-                        </div>
-                        """,
-                        key=f"page_{i}"
-                    )
-
-                    if clicked:
-                        page_num = i + 1
-                        if page_num in st.session_state.selected_pages:
-                            st.session_state.selected_pages.remove(page_num)
-                        else:
-                            st.session_state.selected_pages.append(page_num)
-
+            with pdfplumber.open(pdf_path) as pdf:
+                for i, page in enumerate(pdf.pages):
+                    show_it = show_all_pages or ((i + 1) in selected_pages)
+                    if show_it:
+                        image = page.to_image(resolution=150).original
+                        img_base64 = pil_to_base64(image)
+                        st.markdown(f"""
+                            <div class="pdf-preview">
+                                <img src="data:image/png;base64,{img_base64}" style="width:100%;">
+                                <p style="text-align:center; font-size: 14px; color: #999;">Page {i + 1}</p>
+                            </div>
+                        """, unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
+
 else:
     st.warning("🕵️ Please upload a PDF or paste a URL to begin your audiobook journey.")
-
