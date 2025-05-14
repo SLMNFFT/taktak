@@ -6,6 +6,7 @@ import tempfile
 import os
 import requests
 import pdfplumber
+from pypdf import PdfReader
 from PIL import Image
 from io import BytesIO
 import base64
