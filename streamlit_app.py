@@ -34,6 +34,13 @@ st.markdown("""
     .stButton>button:hover {
         background-color: #404040;
     }
+    .pdf-preview-scroll {
+        max-height: 80vh;
+        overflow-y: scroll;
+        border: 1px solid #333;
+        padding: 10px;
+        border-radius: 10px;
+    }
     .pdf-preview img {
         border: 2px solid #333;
         border-radius: 10px;
@@ -92,6 +99,8 @@ if pdf_path:
         default=[1]
     )
 
+    show_all_pages = st.sidebar.checkbox("📚 Show All Pages in Preview", value=False)
+
     col_left, col_right = st.columns([1.5, 2])
 
     with col_left:
@@ -136,10 +145,12 @@ if pdf_path:
                 st.info("No text found on selected pages.")
 
     with col_right:
-        with st.expander("🖼️ Preview Pages"):
+        with st.expander("🖼️ Preview Pages", expanded=True):
+            st.markdown('<div class="pdf-preview-scroll">', unsafe_allow_html=True)
             with pdfplumber.open(pdf_path) as pdf:
                 for i, page in enumerate(pdf.pages):
-                    if i + 1 in selected_pages:
+                    show_it = show_all_pages or ((i + 1) in selected_pages)
+                    if show_it:
                         image = page.to_image(resolution=150).original
                         img_base64 = pil_to_base64(image)
                         st.markdown(f"""
@@ -148,6 +159,7 @@ if pdf_path:
                                 <p style="text-align:center; font-size: 14px; color: #999;">Page {i + 1}</p>
                             </div>
                         """, unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
 else:
     st.warning("🕵️ Please upload a PDF or paste a URL to begin your audiobook journey.")
