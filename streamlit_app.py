@@ -42,7 +42,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("📖 Mogontia — The Fiction & Mystery Audiobook Forge")
+st.title("📖 Mogontia — V0.1 Beta Audiobook Gen")
 
 # Upload area
 st.header("📂 Choose Your Manuscript")
