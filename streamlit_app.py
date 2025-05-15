@@ -11,7 +11,7 @@ import base64
 import os
 import pytesseract
 import pdf2image
-from pdf2image.exceptions import PDFInfoNotInstalledError
+from pdf2image.exceptions import PDFInfoNotInstalledError, PDFPageCountError
 
 st.set_page_config(
     page_title="Peepit Audiobook",
@@ -62,7 +62,6 @@ st.markdown("""
         border: 1px solid rgba(255,255,255,0.1);
         border-radius: 15px;
         padding: 2rem;
-        transition: all 0.3s ease;
     }
 
     .stButton>button {
@@ -135,7 +134,10 @@ def extract_text_with_ocr(pdf_path, pages):
     try:
         images = pdf2image.convert_from_path(pdf_path, dpi=300)
     except PDFInfoNotInstalledError:
-        st.error("⚠️ PDF to image conversion requires 'poppler-utils' installed on the system. OCR fallback is disabled.")
+        st.error("⚠️ PDF to image conversion requires 'poppler-utils' installed on the system.")
+        return ""
+    except PDFPageCountError:
+        st.error("❌ Could not read PDF pages for OCR.")
         return ""
 
     ocr_text = ""
@@ -167,7 +169,6 @@ def extract_text_from_pdf(pdf_path, pages):
 
 
 def main():
-    # Hero Section
     st.markdown("""
         <div class="header-gradient">
             <h1 style="color: white; margin: 0;">🎧PeePit</h1>
@@ -178,8 +179,7 @@ def main():
     """, unsafe_allow_html=True)
 
     col1, col2 = st.columns(2, gap="large")
-    pdf_file = None
-    pdf_url = None
+    pdf_file, pdf_url = None, None
 
     with col1:
         st.markdown('<div class="upload-card">', unsafe_allow_html=True)
@@ -209,8 +209,12 @@ def main():
                 return
 
         with st.spinner("🔍 Analyzing document..."):
-            pdf_reader = PdfReader(pdf_path)
-            total_pages = len(pdf_reader.pages)
+            try:
+                pdf_reader = PdfReader(pdf_path)
+                total_pages = len(pdf_reader.pages)
+            except Exception as e:
+                st.error(f"❌ Error reading PDF: {str(e)}")
+                return
 
             st.sidebar.markdown("## 📄 Page Selection")
             selected_pages = st.sidebar.multiselect(
@@ -222,11 +226,9 @@ def main():
 
             col_left, col_right = st.columns([1, 1], gap="large")
 
-            # Text Preview
             with col_left:
                 with st.expander("📜 Document Text", expanded=True):
                     full_text = extract_text_from_pdf(pdf_path, selected_pages)
-
                     st.markdown(f"""
                         <div class="preview-card">
                             <div class="preview-content">
@@ -249,18 +251,12 @@ def main():
                                 with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
                                     tts.save(fp.name)
                                     st.audio(fp.name, format="audio/mp3")
-                                    st.download_button(
-                                        "💾 Download Audiobook",
-                                        data=open(fp.name, "rb"),
-                                        file_name="audiobook.mp3",
-                                        mime="audio/mp3"
-                                    )
+                                    st.download_button("💾 Download Audiobook", data=open(fp.name, "rb"), file_name="audiobook.mp3", mime="audio/mp3")
                     with button_col2:
                         st.caption("Quality may vary based on document complexity.")
                 except Exception as e:
                     st.error(f"Error generating audio: {str(e)}")
 
-            # PDF Visual Preview
             with col_right:
                 with st.expander("🖼️ Visual Preview", expanded=True):
                     st.markdown("""<div class="preview-card"><div class="preview-content">""", unsafe_allow_html=True)
@@ -276,6 +272,7 @@ def main():
 
     else:
         st.info("Upload a PDF file or enter a PDF URL to get started.")
+
 
 if __name__ == "__main__":
     main()
