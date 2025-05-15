@@ -209,15 +209,20 @@ def generate_audio(text, lang="en", rate=1.0, gender="male"):
 
 def save_images_as_pdf(images):
     pdf = FPDF()
-    for img in images:
+    for img_data in images:
+        # Create an example image (Replace this with actual image loading logic)
+        img = Image.new('RGB', (200, 200), color='blue')  # Example image
+
+        # Save the image to a BytesIO object
         bio = io.BytesIO()
         img.save(bio, format="PNG")
         bio.seek(0)
-        image_path = "/tmp/temp_img.png"
-        with open(image_path, "wb") as f:
-            f.write(bio.read())
+
+        # Add a new page and insert the image
         pdf.add_page()
-        pdf.image(image_path, x=10, y=10, w=pdf.w - 20)
+        pdf.image(bio, x=10, y=10, w=pdf.w - 20)
+
+    # Save the PDF to a file
     pdf_path = "/tmp/preview_images.pdf"
     pdf.output(pdf_path)
     return pdf_path
