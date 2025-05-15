@@ -134,9 +134,6 @@ pre {
     gap: 1rem;
 }
 
-/* ===== Buttons, Inputs, Toggles (Streamlit default overrides can be added here) ===== */
-/* Add your custom button/input styles here if needed */
-
 /* ===== Responsive tweaks ===== */
 @media (max-width: 768px) {
     [data-testid="stColumns"] {
@@ -197,7 +194,8 @@ def extract_text_from_pdf(pdf_path, selected_pages):
 
 
 def generate_audio(text, lang="en", rate=1.0, gender="male"):
-    tts = gTTS(text=text, lang=lang, slow=False)
+    # gTTS does not support rate or gender control, ignoring those params for now
+    tts = gTTS(text=text, lang=lang, slow=(rate<1.0))
     temp_audio_path = tempfile.mktemp(suffix=".mp3")
     tts.save(temp_audio_path)
     return temp_audio_path
@@ -219,10 +217,11 @@ def save_images_as_pdf(images):
 
 # --- MAIN APP ---
 def main():
-    pdf_file = st.file_uploader("Turn your PDF to a MP3 file.  (PDF images and image PDFs are not supported)", type=["pdf"])
+    pdf_file = st.file_uploader("Turn your PDF to a MP3 file. (PDF images and image PDFs are not supported)", type=["pdf"])
     pdf_url = st.text_input("Or enter a PDF URL")
 
     if not pdf_file and not pdf_url:
+        # Centered layout before upload
         st.markdown("""
         <div class="centered-container">
             <h1 style='
@@ -234,24 +233,23 @@ def main():
                 text-align: center;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                 font-weight: 600;
-                margin: 0 0 1rem 0;
+                margin: 0;
                 width: 100%;
                 max-width: 480px;
             '>🎧 PeePit</h1>
-            <div style="width: 100%; max-width: 600px;">
+            <div style="width: 100%; max-width: 480px;">
                 <p style="color: #ddd; text-align:center;">Upload a PDF file or enter a URL to get started</p>
             </div>
-
-            <div style="width: 100%; max-width: 600px;">
-                <!-- Center uploader and URL side by side -->
+            <div style="width: 100%; max-width: 480px;">
+                <!-- File uploader and URL input in same width -->
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-        # Use Streamlit columns for uploader + URL input horizontally centered
-        col1, col2, col3 = st.columns([1, 3, 1])
+        # Show uploader + URL input centered using columns hack
+        col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            st.file_uploader("Turn your PDF to a MP3 file.  (PDF images and image PDFs are not supported)", type=["pdf"], key="centered_uploader")
+            st.file_uploader("Turn your PDF to a MP3 file. (PDF images and image PDFs are not supported)", type=["pdf"], key="centered_uploader")
             st.text_input("Or enter a PDF URL", key="centered_url")
         return
 
@@ -302,7 +300,6 @@ def main():
 
                     if not show_ocr and ocr_pages:
                         # Remove OCR pages text from display
-                        # Use regex to split pages and exclude OCR pages
                         pattern = r"(--- Page (\d+).*?)(?=--- Page \d+|$)"
                         matches = re.findall(pattern, full_text, re.DOTALL)
                         filtered_text = ""
@@ -341,43 +338,70 @@ def main():
                 with col3:
                     voice = st.selectbox("Voice", ["male", "female"])
 
-                rate_map = {"slow": 125, "normal": 150, "fast": 180}
-                tts_rate = rate_map[speed]
+                rate_map = {"slow": 0.75, "normal": 1.0, "fast": 1.25}
+                audio_path = generate_audio(full_text, lang=language, rate=rate_map[speed], gender=voice)
+                with open(audio_path, "rb") as f_audio:
+                    audio_bytes = f_audio.read()
 
-                if st.button("🎧 Generate Audio"):
-                    with st.spinner("Generating audio..."):
-                        audio_path = generate_audio(full_text, lang=language, rate=tts_rate, gender=voice)
-                        audio_file = open(audio_path, "rb")
-                        audio_bytes = audio_file.read()
-                        st.audio(audio_bytes, format="audio/mp3")
-                        st.download_button("📥 Download Audio", audio_bytes, file_name="speech.mp3")
+                st.audio(audio_bytes, format="audio/mp3")
 
-            # --- RIGHT COLUMN: IMAGE PREVIEWS ---
+                st.download_button(
+                    label="📥 Download MP3 Audio",
+                    data=audio_bytes,
+                    file_name="audiobook.mp3",
+                    mime="audio/mp3",
+                )
+
+            # --- RIGHT COLUMN: PREVIEW & IMAGES ---
             with col_right:
-                with st.expander("🖼️ Visual Preview", expanded=True):
-                    st.markdown("""<div class="preview-card"><div class="scroll-container"><div class="preview-image-container">""", unsafe_allow_html=True)
-                    rendered_images = []
-                    with pdfplumber.open(pdf_path) as pdf:
-                        for i, page in enumerate(pdf.pages):
-                            page_num = i + 1
-                            if page_num in selected_pages:
-                                img = page.to_image(resolution=150).original
-                                rendered_images.append(img)
-                                img_base64 = pil_to_base64(img)
-                                st.markdown(f"""
-                                    <div class="preview-image">
-                                        <img src="data:image/png;base64,{img_base64}" style="width:100%; height:auto;"/>
-                                        <p>Page {page_num}</p>
-                                    </div>
-                                """, unsafe_allow_html=True)
+                with st.expander("🖼️ Preview Images", expanded=True):
+                    images = []
+                    for i in selected_pages:
+                        try:
+                            page = reader.pages[i - 1]
+                            if "/XObject" in page["/Resources"]:
+                                xObject = page["/Resources"]["/XObject"].get_object()
+                                for obj in xObject:
+                                    if xObject[obj]["/Subtype"] == "/Image":
+                                        size = (xObject[obj]["/Width"], xObject[obj]["/Height"])
+                                        data = xObject[obj].get_data()
+                                        mode = "RGB"
+                                        if xObject[obj]["/ColorSpace"] == "/DeviceCMYK":
+                                            mode = "CMYK"
+                                        img = Image.frombytes(mode, size, data)
+                                        images.append(img)
+                        except Exception as e:
+                            st.warning(f"Could not extract images from page {i}: {e}")
 
-                    st.markdown("</div></div></div>", unsafe_allow_html=True)
+                    if images:
+                        st.markdown('<div class="preview-image-container">', unsafe_allow_html=True)
+                        for idx, img in enumerate(images[:10]):  # Show max 10 images
+                            img = img.resize((200, int(200 * img.height / img.width)))
+                            img_b64 = pil_to_base64(img)
+                            st.markdown(f"""
+                            <div class="preview-image">
+                                <img src="data:image/png;base64,{img_b64}" alt="Page Image {idx + 1}">
+                                <p>Page Image {idx + 1}</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
 
-                    if rendered_images:
-                        pdf_preview_path = save_images_as_pdf(rendered_images)
-                        with open(pdf_preview_path, "rb") as f:
-                            pdf_bytes = f.read()
-                            st.download_button("📥 Download Preview PDF", pdf_bytes, file_name="preview.pdf")
+                        pdf_preview_path = save_images_as_pdf(images)
+                        with open(pdf_preview_path, "rb") as f_pdf:
+                            pdf_bytes = f_pdf.read()
+
+                        st.download_button(
+                            "📥 Download Preview Images PDF",
+                            pdf_bytes,
+                            file_name="preview_images.pdf",
+                            mime="application/pdf",
+                        )
+                    else:
+                        st.info("No images found in the selected pages.")
+
+        # Cleanup temp files
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
 
 if __name__ == "__main__":
     main()
