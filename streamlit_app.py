@@ -6,9 +6,11 @@ import pdfplumber
 from pypdf import PdfReader
 from PIL import Image
 from fpdf import FPDF
+import pyttsx3
 import io
 from gtts import gTTS
 import os
+import streamlit as st
 
 st.set_page_config(
     page_title="Peepit Audiobook",
@@ -124,16 +126,6 @@ pre {
     line-height: 1.4;
 }
 
-/* ===== Center content vertically and horizontally when empty ===== */
-.centered-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 80vh;
-    gap: 1rem;
-}
-
 /* ===== Buttons, Inputs, Toggles (Streamlit default overrides can be added here) ===== */
 /* Add your custom button/input styles here if needed */
 
@@ -149,7 +141,6 @@ pre {
 }
 </style>
 """, unsafe_allow_html=True)
-
 
 # --- HELPER FUNCTIONS ---
 
@@ -202,6 +193,11 @@ def generate_audio(text, lang="en", rate=1.0, gender="male"):
     tts.save(temp_audio_path)
     return temp_audio_path
 
+    temp_audio_path = tempfile.mktemp(suffix=".mp3")
+    engine.save_to_file(text, temp_audio_path)
+    engine.runAndWait()
+    return temp_audio_path
+
 def save_images_as_pdf(images):
     pdf = FPDF()
     for img in images:
@@ -219,65 +215,32 @@ def save_images_as_pdf(images):
 
 # --- MAIN APP ---
 def main():
+    st.markdown("""
+<h1 style='
+    background: #2ecc71;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    font-weight: 600;
+    margin-top: 0;
+'>
+🎧 PeePit
+</h1>
+""", unsafe_allow_html=True)
+
     pdf_file = st.file_uploader("Turn your PDF to a MP3 file.  (PDF images and image PDFs are not supported)", type=["pdf"])
     pdf_url = st.text_input("Or enter a PDF URL")
 
-    if not pdf_file and not pdf_url:
-        # Centered layout before upload
-        st.markdown("""
-        <div class="centered-container">
-            <h1 style='
-                background: #2ecc71;
-                color: white;
-                padding: 1rem 1.5rem;
-                border-radius: 12px;
-                font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-                text-align: center;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                font-weight: 600;
-                margin: 0;
-                width: 100%;
-                max-width: 480px;
-            '>🎧 PeePit</h1>
-            <div style="width: 100%; max-width: 480px;">
-                <p style="color: #ddd; text-align:center;">Upload a PDF file or enter a URL to get started</p>
-            </div>
-            <div style="width: 100%; max-width: 480px;">
-                <!-- File uploader and URL input in same width -->
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Show uploader + URL input centered using columns hack
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.file_uploader("Turn your PDF to a MP3 file.  (PDF images and image PDFs are not supported)", type=["pdf"], key="centered_uploader")
-            st.text_input("Or enter a PDF URL", key="centered_url")
-        return
-
-    # If file uploaded or URL provided, process file as before
     pdf_path = None
     if pdf_file:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             tmp.write(pdf_file.read())
             pdf_path = tmp.name
-    # (For URL: you can add downloading logic here if you want, currently ignored)
 
     if pdf_path:
-        st.markdown("""
-        <h1 style='
-            background: #2ecc71;
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 12px;
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            font-weight: 600;
-            margin-top: 0;
-        '>🎧 PeePit</h1>
-        """, unsafe_allow_html=True)
-
         reader = PdfReader(pdf_path)
         total_pages = len(reader.pages)
         selected_pages = st.multiselect("Select pages to process", list(range(1, total_pages + 1)), default=[1])
@@ -298,33 +261,28 @@ def main():
             with col_left:
                 with st.expander("📜 Extracted Text", expanded=True):
                     search_term = st.text_input("🔎 Search within text", "")
-                    show_ocr = st.checkbox("👁️ Show OCR text", value=True)
+                    show_ocr = st.toggle("👁️ Show OCR text", value=True)
 
                     if not show_ocr and ocr_pages:
-                        # Remove OCR pages text from display
-                        # Use regex to split pages and exclude OCR pages
-                        pattern = r"(--- Page (\d+).*?)(?=--- Page \d+|$)"
-                        matches = re.findall(pattern, full_text, re.DOTALL)
-                        filtered_text = ""
-                        for full_match, page_num_str in matches:
-                            page_num = int(page_num_str)
-                            if page_num not in ocr_pages:
-                                filtered_text += full_match
-                        display_text = filtered_text
+                        pattern = r"--- Page (\d+).*?(?=(--- Page |\Z))"
+                        filtered = re.findall(pattern, full_text, re.DOTALL)
+                        filtered_text = "\n\n".join(
+                            section for section, _ in filtered if int(section) not in ocr_pages
+                        )
                     else:
-                        display_text = full_text
+                        filtered_text = full_text
 
                     if search_term:
-                        display_text = re.sub(
+                        filtered_text = re.sub(
                             f"(?i)({re.escape(search_term)})",
                             r"<mark style='background-color:yellow'>\1</mark>",
-                            display_text
+                            filtered_text
                         )
 
                     st.markdown(f"""
                         <div class="preview-card">
                             <div class="scroll-container">
-                                <pre>{display_text}</pre>
+                                <pre>{filtered_text}</pre>
                             </div>
                         </div>
                     """, unsafe_allow_html=True)
@@ -348,9 +306,8 @@ def main():
                     with st.spinner("Generating audio..."):
                         audio_path = generate_audio(full_text, lang=language, rate=tts_rate, gender=voice)
                         audio_file = open(audio_path, "rb")
-                        audio_bytes = audio_file.read()
-                        st.audio(audio_bytes, format="audio/mp3")
-                        st.download_button("📥 Download Audio", audio_bytes, file_name="speech.mp3")
+                        st.audio(audio_file.read(), format="audio/mp3")
+                        st.download_button("📥 Download Audio", audio_file.read(), file_name="speech.mp3")
 
             # --- RIGHT COLUMN: IMAGE PREVIEWS ---
             with col_right:
@@ -370,14 +327,16 @@ def main():
                                         <p>Page {page_num}</p>
                                     </div>
                                 """, unsafe_allow_html=True)
-
                     st.markdown("</div></div></div>", unsafe_allow_html=True)
 
+                    # Download as PDF
                     if rendered_images:
-                        pdf_preview_path = save_images_as_pdf(rendered_images)
-                        with open(pdf_preview_path, "rb") as f:
-                            pdf_bytes = f.read()
-                            st.download_button("📥 Download Preview PDF", pdf_bytes, file_name="preview.pdf")
+                        pdf_file_path = save_images_as_pdf(rendered_images)
+                        with open(pdf_file_path, "rb") as f:
+                            st.download_button("📥 Download Previews as PDF", f.read(), file_name="previews.pdf", mime="application/pdf")
+
+    else:
+        st.info("📤 Upload a PDF file to begin.")
 
 if __name__ == "__main__":
     main()
