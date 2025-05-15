@@ -1,35 +1,31 @@
-# Base image with Python and system tools
+# Use official Python slim image
 FROM python:3.11-slim
 
-# Environment settings
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# Set environment variables to avoid buffering issues
+ENV PYTHONUNBUFFERED=1
 
-# Install dependencies excluding poppler-utils
+# Install system dependencies needed for pdf2image and pytesseract
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    poppler-utils \
     tesseract-ocr \
     tesseract-ocr-eng \
-    libtesseract-dev \
-    build-essential \
-    libgl1 \
-    ghostscript \
-    curl \
-    && apt-get clean \
+    fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
 
-# Copy requirements and install Python packages
+# Copy requirements and install
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy app code
-COPY . .
+# Copy app source code
+COPY main.py .
 
-# Expose Streamlit port
+# Expose Streamlit default port
 EXPOSE 8501
 
-# Run app
-CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.enableCORS=false"]
+# Run the Streamlit app
+CMD ["streamlit", "run", "main.py", "--server.port=8501", "--server.address=0.0.0.0"]
+
 
