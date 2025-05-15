@@ -217,7 +217,7 @@ def save_images_as_pdf(images):
 def main():
     st.title("📄 PeePit - PDF2MP3")
 
-    pdf_file = st.file_uploader("Upload PDF", type=["pdf"])
+    pdf_file = st.file_uploader("Turn your PDF to a MP3 file", type=["pdf"])
     pdf_url = st.text_input("Or enter a PDF URL")
 
     pdf_path = None
