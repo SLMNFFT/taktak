@@ -9,6 +9,7 @@ from PIL import Image
 from io import BytesIO
 import base64
 import os
+import streamlit.components.v1 as components
 
 # OCR requirements
 import pytesseract
@@ -199,6 +200,21 @@ def main():
                                     </div>
                                 """, unsafe_allow_html=True)
                     st.markdown("</div>", unsafe_allow_html=True)
+
+            # Full PDF Preview
+            with st.expander("📑 Full PDF Preview", expanded=False):
+                if pdf_path and os.path.exists(pdf_path):
+                    with open(pdf_path, "rb") as f:
+                        base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+                    pdf_display = f"""
+                        <iframe 
+                            src="data:application/pdf;base64,{base64_pdf}" 
+                            width="100%" 
+                            height="800px" 
+                            style="border: none; border-radius: 8px;">
+                        </iframe>
+                    """
+                    components.html(pdf_display, height=820)
 
         if pdf_path and os.path.exists(pdf_path):
             os.remove(pdf_path)
