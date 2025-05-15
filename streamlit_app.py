@@ -195,7 +195,7 @@ def extract_text_from_pdf(pdf_path, selected_pages):
 
 def generate_audio(text, lang="en", rate=1.0, gender="male"):
     # gTTS does not support rate or gender control, ignoring those params for now
-    tts = gTTS(text=text, lang=lang, slow=(rate<1.0))
+    tts = gTTS(text=text, lang=lang, slow=(rate < 1.0))
     temp_audio_path = tempfile.mktemp(suffix=".mp3")
     tts.save(temp_audio_path)
     return temp_audio_path
@@ -206,12 +206,13 @@ def save_images_as_pdf(images):
         bio = io.BytesIO()
         img.save(bio, format="PNG")
         bio.seek(0)
-        image_path = "/tmp/temp_img.png"
+        image_path = tempfile.mktemp(suffix=".png")
         with open(image_path, "wb") as f:
             f.write(bio.read())
         pdf.add_page()
         pdf.image(image_path, x=10, y=10, w=pdf.w - 20)
-    pdf_path = "/tmp/preview_images.pdf"
+        os.remove(image_path)
+    pdf_path = tempfile.mktemp(suffix=".pdf")
     pdf.output(pdf_path)
     return pdf_path
 
@@ -241,7 +242,6 @@ def main():
                 <p style="color: #ddd; text-align:center;">Upload a PDF file or enter a URL to get started</p>
             </div>
             <div style="width: 100%; max-width: 480px;">
-                <!-- File uploader and URL input in same width -->
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -259,149 +259,121 @@ def main():
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             tmp.write(pdf_file.read())
             pdf_path = tmp.name
-    # (For URL: you can add downloading logic here if you want, currently ignored)
+    # Add your PDF downloading logic if pdf_url is provided, if needed
 
-    if pdf_path:
-        st.markdown("""
-        <h1 style='
-            background: #2ecc71;
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 12px;
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            font-weight: 600;
-            margin-top: 0;
-        '>🎧 PeePit</h1>
-        """, unsafe_allow_html=True)
+    if not pdf_path:
+        st.warning("Please upload a PDF file to continue.")
+        return
 
-        reader = PdfReader(pdf_path)
-        total_pages = len(reader.pages)
-        selected_pages = st.multiselect("Select pages to process", list(range(1, total_pages + 1)), default=[1])
+    st.markdown("""
+    <h1 style='
+        background: #2ecc71;
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        font-weight: 600;
+        margin-top: 0;
+    '>🎧 PeePit</h1>
+    """, unsafe_allow_html=True)
 
-        if not selected_pages:
-            st.error("Please select at least one valid page")
+    reader = PdfReader(pdf_path)
+    total_pages = len(reader.pages)
+    selected_pages = st.multiselect("Select pages to process", list(range(1, total_pages + 1)), default=[1])
+
+    if not selected_pages:
+        st.error("Please select at least one valid page")
+        return
+
+    with st.spinner("🔍 Analyzing document..."):
+        full_text, ocr_pages = extract_text_from_pdf(pdf_path, selected_pages)
+        if not full_text:
+            st.error("No extractable text found in selected pages")
             return
 
-        with st.spinner("🔍 Analyzing document..."):
-            full_text, ocr_pages = extract_text_from_pdf(pdf_path, selected_pages)
-            if not full_text:
-                st.error("No extractable text found in selected pages")
-                return
+        col_left, col_right = st.columns(2)
 
-            col_left, col_right = st.columns(2)
+        # --- LEFT COLUMN: TEXT + AUDIO ---
+        with col_left:
+            with st.expander("📜 Extracted Text", expanded=True):
+                search_term = st.text_input("🔎 Search within text", "")
+                show_ocr = st.checkbox("👁️ Show OCR text", value=True)
 
-            # --- LEFT COLUMN: TEXT + AUDIO ---
-            with col_left:
-                with st.expander("📜 Extracted Text", expanded=True):
-                    search_term = st.text_input("🔎 Search within text", "")
-                    show_ocr = st.checkbox("👁️ Show OCR text", value=True)
+                if not show_ocr and ocr_pages:
+                    # Remove OCR pages text from display
+                    pattern = r"(--- Page (\d+).*?)(?=--- Page \d+|$)"
+                    matches = re.findall(pattern, full_text, re.DOTALL)
+                    filtered_text = ""
+                    for full_match, page_num_str in matches:
+                        page_num = int(page_num_str)
+                        if page_num not in ocr_pages:
+                            filtered_text += full_match + "\n\n"
+                    text_to_show = filtered_text.strip()
+                else:
+                    text_to_show = full_text
 
-                    if not show_ocr and ocr_pages:
-                        # Remove OCR pages text from display
-                        pattern = r"(--- Page (\d+).*?)(?=--- Page \d+|$)"
-                        matches = re.findall(pattern, full_text, re.DOTALL)
-                        filtered_text = ""
-                        for full_match, page_num_str in matches:
-                            page_num = int(page_num_str)
-                            if page_num not in ocr_pages:
-                                filtered_text += full_match
-                        display_text = filtered_text
-                    else:
-                        display_text = full_text
+                if search_term:
+                    # Highlight matches
+                    safe_term = re.escape(search_term)
+                    highlight_html = re.sub(f"({safe_term})", r'<mark>\1</mark>', text_to_show, flags=re.I)
+                    st.markdown(f"<pre style='color:#ddd;background:#0f1123;padding:10px;border-radius:8px;white-space:pre-wrap;'>{highlight_html}</pre>", unsafe_allow_html=True)
+                else:
+                    st.text_area("Extracted text", value=text_to_show, height=320)
 
-                    if search_term:
-                        display_text = re.sub(
-                            f"(?i)({re.escape(search_term)})",
-                            r"<mark style='background-color:yellow'>\1</mark>",
-                            display_text
-                        )
+            # Audio generation controls
+            lang = st.selectbox("Select language", options=["en", "es", "fr", "de"], index=0)
+            gender = st.selectbox("Select gender (note: gTTS ignores this)", options=["male", "female"])
+            rate = st.slider("Select speed", 0.5, 2.0, 1.0, 0.1)
 
-                    st.markdown(f"""
-                        <div class="preview-card">
-                            <div class="scroll-container">
-                                <pre>{display_text}</pre>
-                            </div>
+            audio_path = None
+            if st.button("🎙️ Generate Audio"):
+                with st.spinner("Converting text to speech..."):
+                    audio_path = generate_audio(full_text, lang=lang, rate=rate, gender=gender)
+                st.success("Audio generated!")
+                audio_file = open(audio_path, "rb").read()
+                st.audio(audio_file, format="audio/mp3")
+
+                # Cleanup audio file after playback? Optional
+                # os.remove(audio_path)
+
+        # --- RIGHT COLUMN: IMAGE PREVIEW ---
+        with col_right:
+            # Extract images from PDF pages selected
+            with st.expander("🖼️ Preview Images from PDF", expanded=True):
+                images = []
+                try:
+                    with pdfplumber.open(pdf_path) as pdf:
+                        for p in selected_pages:
+                            if 1 <= p <= len(pdf.pages):
+                                page = pdf.pages[p - 1]
+                                imgs = page.images
+                                if imgs:
+                                    for img_dict in imgs:
+                                        try:
+                                            # crop the image from the PDF page
+                                            bbox = (img_dict['x0'], img_dict['top'], img_dict['x1'], img_dict['bottom'])
+                                            pil_img = page.to_image(resolution=150).crop(bbox).original
+                                            images.append(pil_img)
+                                        except Exception as e:
+                                            st.warning(f"Error extracting image on page {p}: {e}")
+                except Exception as e:
+                    st.warning(f"Error opening PDF for image extraction: {e}")
+
+                if images:
+                    st.markdown('<div class="preview-image-container">', unsafe_allow_html=True)
+                    for idx, img in enumerate(images):
+                        b64 = pil_to_base64(img)
+                        st.markdown(f"""
+                        <div class="preview-image">
+                            <img src="data:image/png;base64,{b64}" alt="Page image {idx+1}">
+                            <p>Image {idx+1}</p>
                         </div>
-                    """, unsafe_allow_html=True)
-
-                    st.download_button("📥 Download Extracted Text", full_text, file_name="extracted_text.txt")
-
-                # Audio Settings
-                st.subheader("🔊 Audio Settings")
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    language = st.selectbox("Language", ["en", "fr", "de", "es"])
-                with col2:
-                    speed = st.select_slider("Speed", ["slow", "normal", "fast"], value="normal")
-                with col3:
-                    voice = st.selectbox("Voice", ["male", "female"])
-
-                rate_map = {"slow": 0.75, "normal": 1.0, "fast": 1.25}
-                audio_path = generate_audio(full_text, lang=language, rate=rate_map[speed], gender=voice)
-                with open(audio_path, "rb") as f_audio:
-                    audio_bytes = f_audio.read()
-
-                st.audio(audio_bytes, format="audio/mp3")
-
-                st.download_button(
-                    label="📥 Download MP3 Audio",
-                    data=audio_bytes,
-                    file_name="audiobook.mp3",
-                    mime="audio/mp3",
-                )
-
-            # --- RIGHT COLUMN: PREVIEW & IMAGES ---
-            with col_right:
-                with st.expander("🖼️ Preview Images", expanded=True):
-                    images = []
-                    for i in selected_pages:
-                        try:
-                            page = reader.pages[i - 1]
-                            if "/XObject" in page["/Resources"]:
-                                xObject = page["/Resources"]["/XObject"].get_object()
-                                for obj in xObject:
-                                    if xObject[obj]["/Subtype"] == "/Image":
-                                        size = (xObject[obj]["/Width"], xObject[obj]["/Height"])
-                                        data = xObject[obj].get_data()
-                                        mode = "RGB"
-                                        if xObject[obj]["/ColorSpace"] == "/DeviceCMYK":
-                                            mode = "CMYK"
-                                        img = Image.frombytes(mode, size, data)
-                                        images.append(img)
-                        except Exception as e:
-                            st.warning(f"Could not extract images from page {i}: {e}")
-
-                    if images:
-                        st.markdown('<div class="preview-image-container">', unsafe_allow_html=True)
-                        for idx, img in enumerate(images[:10]):  # Show max 10 images
-                            img = img.resize((200, int(200 * img.height / img.width)))
-                            img_b64 = pil_to_base64(img)
-                            st.markdown(f"""
-                            <div class="preview-image">
-                                <img src="data:image/png;base64,{img_b64}" alt="Page Image {idx + 1}">
-                                <p>Page Image {idx + 1}</p>
-                            </div>
-                            """, unsafe_allow_html=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
-
-                        pdf_preview_path = save_images_as_pdf(images)
-                        with open(pdf_preview_path, "rb") as f_pdf:
-                            pdf_bytes = f_pdf.read()
-
-                        st.download_button(
-                            "📥 Download Preview Images PDF",
-                            pdf_bytes,
-                            file_name="preview_images.pdf",
-                            mime="application/pdf",
-                        )
-                    else:
-                        st.info("No images found in the selected pages.")
-
-        # Cleanup temp files
-        if os.path.exists(audio_path):
-            os.remove(audio_path)
+                        """, unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                else:
+                    st.info("No images found in selected pages.")
 
 if __name__ == "__main__":
     main()
