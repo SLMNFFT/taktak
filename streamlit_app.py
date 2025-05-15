@@ -6,6 +6,8 @@ import tempfile
 import requests
 import pdfplumber
 from PIL import Image
+from io import BytesIO
+import base64
 import os
 import pytesseract
 import pdf2image
@@ -27,6 +29,7 @@ st.set_page_config(
     }
 )
 
+# CSS Styles (unchanged)
 st.markdown("""
     <style>
     :root {
@@ -185,6 +188,7 @@ def render_pdf_images(pdf_path, pages):
             last_page=max(pages),
             thread_count=2,
         )
+        # Show only selected pages images
         for idx, img in enumerate(images, start=min(pages)):
             if idx in pages:
                 st.image(img, use_column_width=True)
@@ -231,6 +235,7 @@ def main():
             else:
                 return
 
+        # Validate PDF and get page count
         try:
             pdf_reader = PdfReader(pdf_path)
             total_pages = len(pdf_reader.pages)
@@ -296,27 +301,29 @@ def main():
                 if st.button("🎧 Generate Audiobook"):
                     with st.spinner("Generating audio..."):
                         try:
-                            audio_path = generate_audio(full_text, detected_lang)
-                            audio_file = open(audio_path, "rb")
-                            audio_bytes = audio_file.read()
-                            audio_file.close()
+                            audio_file_path = generate_audio(full_text, detected_lang)
+                            with open(audio_file_path, "rb") as f:
+                                audio_bytes = f.read()
                             st.audio(audio_bytes, format="audio/mp3")
-
-                            # Cleanup temporary audio file
-                            os.unlink(audio_path)
+                            st.download_button(
+                                label="💾 Download Audiobook",
+                                data=audio_bytes,
+                                file_name="audiobook.mp3",
+                                mime="audio/mp3",
+                            )
+                            # Cleanup audio file
+                            os.unlink(audio_file_path)
                         except Exception as e:
                             st.error(f"Error generating audio: {e}")
 
             with btn_col2:
-                if st.button("🗑️ Clear all"):
-                    st.experimental_rerun()
+                st.caption("Quality may vary based on document complexity.")
 
-        # Clean up temp PDF file on exit
+        # Clean up PDF temp file after use
         if pdf_path and os.path.exists(pdf_path):
             os.unlink(pdf_path)
-
     else:
-        st.info("Upload a PDF file or provide a URL to start.")
+        st.info("Upload a PDF file or enter a PDF URL to get started.")
 
 
 if __name__ == "__main__":
