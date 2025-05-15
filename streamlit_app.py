@@ -10,7 +10,6 @@ import pyttsx3
 import io
 from gtts import gTTS
 import os
-import streamlit as st
 
 st.set_page_config(
     page_title="Peepit Audiobook",
@@ -208,11 +207,6 @@ def generate_audio(text, lang="en", rate=1.0, gender="male"):
     tts.save(temp_audio_path)
     return temp_audio_path
 
-    temp_audio_path = tempfile.mktemp(suffix=".mp3")
-    engine.save_to_file(text, temp_audio_path)
-    engine.runAndWait()
-    return temp_audio_path
-
 def save_images_as_pdf(images):
     pdf = FPDF()
     for img in images:
@@ -291,67 +285,40 @@ def main():
                         filtered_text = re.sub(
                             f"(?i)({re.escape(search_term)})",
                             r"<mark style='background-color:yellow'>\1</mark>",
-                            filtered_text
+                            filtered_text,
+                            flags=re.DOTALL,
                         )
 
-                    st.markdown(f"""
-                        <div class="preview-card">
-                            <div class="scroll-container">
-                                <pre>{filtered_text}</pre>
-                            </div>
-                        </div>
-                    """, unsafe_allow_html=True)
+                    st.markdown(f"<div class='scroll-container'>{filtered_text}</div>", unsafe_allow_html=True)
 
-                    st.download_button("📥 Download Extracted Text", full_text, file_name="extracted_text.txt")
+                    audio_file = generate_audio(filtered_text)
+                    st.audio(audio_file)
 
-                # Audio Settings
-                st.subheader("🔊 Audio Settings")
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    language = st.selectbox("Language", ["en", "fr", "de", "es"])
-                with col2:
-                    speed = st.select_slider("Speed", ["slow", "normal", "fast"], value="normal")
-                with col3:
-                    voice = st.selectbox("Voice", ["male", "female"])
-
-                rate_map = {"slow": 125, "normal": 150, "fast": 180}
-                tts_rate = rate_map[speed]
-
-                if st.button("🎧 Generate Audio"):
-                    with st.spinner("Generating audio..."):
-                        audio_path = generate_audio(full_text, lang=language, rate=tts_rate, gender=voice)
-                        audio_file = open(audio_path, "rb")
-                        st.audio(audio_file.read(), format="audio/mp3")
-                        st.download_button("📥 Download Audio", audio_file.read(), file_name="speech.mp3")
-
-            # --- RIGHT COLUMN: IMAGE PREVIEWS ---
+            # --- RIGHT COLUMN: PREVIEW CARD ---
             with col_right:
-                with st.expander("🖼️ Visual Preview", expanded=True):
-                    st.markdown("""<div class="preview-card"><div class="scroll-container"><div class="preview-image-container">""", unsafe_allow_html=True)
-                    rendered_images = []
-                    with pdfplumber.open(pdf_path) as pdf:
-                        for i, page in enumerate(pdf.pages):
-                            page_num = i + 1
-                            if page_num in selected_pages:
-                                img = page.to_image(resolution=150).original
-                                rendered_images.append(img)
-                                img_base64 = pil_to_base64(img)
-                                st.markdown(f"""
-                                    <div class="preview-image">
-                                        <img src="data:image/png;base64,{img_base64}" style="width:100%; height:auto;"/>
-                                        <p>Page {page_num}</p>
-                                    </div>
-                                """, unsafe_allow_html=True)
-                    st.markdown("</div></div></div>", unsafe_allow_html=True)
+                with st.expander("📸 Preview Images"):
+                    preview_images = []
 
-                    # Download as PDF
-                    if rendered_images:
-                        pdf_file_path = save_images_as_pdf(rendered_images)
-                        with open(pdf_file_path, "rb") as f:
-                            st.download_button("📥 Download Previews as PDF", f.read(), file_name="previews.pdf", mime="application/pdf")
+                    for page_num in selected_pages:
+                        page = reader.pages[page_num - 1]
+                        images = page.extract_images()
+                        for img in images:
+                            image_data = img['image']
+                            image = Image.open(io.BytesIO(image_data))
+                            preview_images.append(image)
 
-    else:
-        st.info("📤 Upload a PDF file to begin.")
+                    preview_pdf = save_images_as_pdf(preview_images)
+                    with open(preview_pdf, "rb") as f:
+                        st.download_button(
+                            "📥 Download Preview PDF", f, file_name="preview_images.pdf"
+                        )
+
+                    if preview_images:
+                        st.write("📷 Images found in the document:")
+                        for i, img in enumerate(preview_images, 1):
+                            st.image(img, width=150, caption=f"Page {i}")
+                    else:
+                        st.write("No images found in the selected pages")
 
 if __name__ == "__main__":
     main()
