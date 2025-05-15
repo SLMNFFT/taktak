@@ -97,7 +97,8 @@ def main():
             <p style="color: rgba(255,255,255,0.8); font-size: 1.1rem;">
                 Legere eam Drusus</p>
                 
-                Transform your doc into immersive mp3 Audiobook (no PDF images and image PDFs)
+                Transform your doc into immersive mp3 
+                (no PDF images and image PDFs)
         </div>
     """, unsafe_allow_html=True)
 
