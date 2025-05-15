@@ -25,6 +25,36 @@ st.markdown("""
     display: flex;
     align-items: stretch; /* equal height columns */
     gap: 2rem; /* space between columns */
+    justify-content: center; /* Center the columns horizontally */
+}
+
+/* ===== General Body Styling ===== */
+body, pre {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #ddd;
+    background-color: #0f1123;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Full viewport height */
+    margin: 0;
+}
+
+/* Main Content Container */
+.main-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    height: 100%;
+    width: 100%;
+    text-align: center;
+}
+
+/* ===== Streamlit Expanders Style ===== */
+.st-expanderHeader {
+    background-color: #2ecc71 !important;
 }
 
 /* ===== Preview Card Styling ===== */
@@ -111,23 +141,7 @@ st.markdown("""
     user-select: none;
 }
 
-/* ===== General Body & Text Styling ===== */
-body, pre {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #ddd;
-    background-color: #0f1123;
-}
-
-/* Preformatted text scroll area styling */
-pre {
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    font-size: 0.95rem;
-    line-height: 1.4;
-}
-
 /* ===== Buttons, Inputs, Toggles (Streamlit default overrides can be added here) ===== */
-/* Add your custom button/input styles here if needed */
 
 /* ===== Responsive tweaks ===== */
 @media (max-width: 768px) {
@@ -141,6 +155,7 @@ pre {
 }
 </style>
 """, unsafe_allow_html=True)
+
 
 # --- HELPER FUNCTIONS ---
 
