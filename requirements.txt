@@ -8,3 +8,4 @@ gTTS==2.5.1
 langdetect==1.0.9
 requests==2.31.0
 
+
