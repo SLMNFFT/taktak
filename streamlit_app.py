@@ -19,15 +19,14 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-/* ===== Streamlit Columns Flex Fix ===== */
+/* Styling for the Streamlit page */
 [data-testid="stColumns"] {
     display: flex;
-    align-items: stretch; /* equal height columns */
-    gap: 2rem; /* space between columns */
-    justify-content: center; /* Center the columns horizontally */
+    align-items: stretch;
+    gap: 2rem;
+    justify-content: center;
 }
 
-/* ===== General Body Styling ===== */
 body, pre {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: #ddd;
@@ -35,11 +34,10 @@ body, pre {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh; /* Full viewport height */
+    height: 100vh;
     margin: 0;
 }
 
-/* Main Content Container */
 .main-container {
     display: flex;
     flex-direction: column;
@@ -51,28 +49,20 @@ body, pre {
     text-align: center;
 }
 
-/* ===== Streamlit Expanders Style ===== */
 .st-expanderHeader {
     background-color: #2ecc71 !important;
 }
 
-/* ===== Preview Card Styling ===== */
 .preview-card {
     background: #1A1B2F;
     border-radius: 15px;
     padding: 1.5rem;
-    height: 100% !important; /* full height of the column */
+    height: 100%;
     display: flex;
     flex-direction: column;
     box-shadow: 0 4px 15px rgba(10, 10, 30, 0.5);
-    transition: background 0.3s ease;
 }
 
-.preview-card:hover {
-    background: #252742;
-}
-
-/* ===== Scroll Container (for scrollable content) ===== */
 .scroll-container {
     flex: 1;
     overflow-y: auto;
@@ -81,46 +71,18 @@ body, pre {
     scrollbar-color: #4e5aee #1A1B2F;
 }
 
-.scroll-container::-webkit-scrollbar {
-    width: 8px;
-}
-
-.scroll-container::-webkit-scrollbar-track {
-    background: #1A1B2F;
-    border-radius: 10px;
-}
-
-.scroll-container::-webkit-scrollbar-thumb {
-    background-color: #4e5aee;
-    border-radius: 10px;
-    border: 2px solid #1A1B2F;
-}
-
-/* ===== Preview Image Container (Grid of images) ===== */
 .preview-image-container {
     display: grid;
-    gap: 1rem; /* Reduced gap for tighter grid */
-    padding-bottom: 1rem;
-    margin-top: 0; /* Remove any top margin */
+    gap: 1rem;
 }
 
-/* ===== Individual Preview Image Card ===== */
 .preview-image {
     background: #2B2D42;
     border-radius: 8px;
     padding: 0.5rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
 }
 
-/* Remove top margin from the first preview image to eliminate gap */
-.preview-image:first-child {
-    margin-top: 0;
-}
-
-/* ===== Image Styling ===== */
 .preview-image img {
     border-radius: 6px;
     margin-bottom: 0.5rem;
@@ -128,29 +90,6 @@ body, pre {
     height: auto;
     object-fit: contain;
     user-select: none;
-}
-
-/* ===== Caption under each image ===== */
-.preview-image p {
-    text-align: center;
-    color: #888;
-    margin: 0;
-    font-size: 0.9rem;
-    font-style: italic;
-    user-select: none;
-}
-
-/* ===== Buttons, Inputs, Toggles (Streamlit default overrides can be added here) ===== */
-
-/* ===== Responsive tweaks ===== */
-@media (max-width: 768px) {
-    [data-testid="stColumns"] {
-        flex-direction: column;
-    }
-    .preview-card {
-        height: auto !important;
-        margin-bottom: 1rem;
-    }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -211,27 +150,25 @@ def save_images_as_pdf(images):
     pdf = FPDF()
     
     for img in images:
-        # Save the image to a BytesIO object
         bio = io.BytesIO()
         img.save(bio, format="PNG")
         bio.seek(0)
 
-        # Save the image from BytesIO to a temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_img_file:
             temp_img_file.write(bio.read())
             temp_img_file_path = temp_img_file.name
         
-        # Add a new page and insert the image from the temporary file
         pdf.add_page()
         pdf.image(temp_img_file_path, x=10, y=10, w=pdf.w - 20)
 
-    # Save the PDF to a file
     pdf_path = "/tmp/preview_images.pdf"
     pdf.output(pdf_path)
     
     return pdf_path
 
+
 # --- MAIN APP ---
+
 def main():
     st.markdown("""
 <h1 style='
@@ -249,7 +186,7 @@ def main():
 </h1>
 """, unsafe_allow_html=True)
 
-    pdf_file = st.file_uploader("Turn your PDF to a MP3 file.  (PDF images and image PDFs are not supported)", type=["pdf"])
+    pdf_file = st.file_uploader("Turn your PDF to a MP3 file. (PDF images and image PDFs are not supported)", type=["pdf"])
     pdf_url = st.text_input("Or enter a PDF URL")
 
     pdf_path = None
@@ -279,7 +216,7 @@ def main():
             with col_left:
                 with st.expander("📜 Extracted Text", expanded=True):
                     search_term = st.text_input("🔎 Search within text", "")
-                    show_ocr = st.toggle("👁️ Show OCR text", value=True)
+                    show_ocr = st.checkbox("👁️ Show OCR text", value=True)
 
                     if not show_ocr and ocr_pages:
                         pattern = r"--- Page (\d+).*?(?=(--- Page |\Z))"
@@ -312,11 +249,19 @@ def main():
                     audio_bytes = audio_file.read()
                     st.audio(audio_bytes, format="audio/mp3")
 
-            # --- Image Export ---
-            st.download_button("📥 Export PDF", save_images_as_pdf(["image1", "image2"]), "exported.pdf", "application/pdf")
+            # --- IMAGE EXPORT (Temporary Images) ---
+            # Create dummy images as examples
+            image1 = Image.new("RGB", (300, 300), color="blue")
+            image2 = Image.new("RGB", (300, 300), color="green")
+            
+            st.download_button(
+                "📥 Export PDF", 
+                save_images_as_pdf([image1, image2]), 
+                "exported_images.pdf", 
+                "application/pdf", 
+                key="export_pdf"
+            )
 
-    else:
-        st.info("Please upload a PDF or provide a valid PDF URL.")
 
 if __name__ == "__main__":
     main()
