@@ -231,7 +231,7 @@ def main():
 </h1>
 """, unsafe_allow_html=True)
 
-    pdf_file = st.file_uploader("Turn your PDF to a MP3 file", type=["pdf"])
+    pdf_file = st.file_uploader("Turn your PDF to a MP3 file (PDF images and image PDFs are not supported)", type=["pdf"])
     pdf_url = st.text_input("Or enter a PDF URL")
 
     pdf_path = None
