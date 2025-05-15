@@ -5,7 +5,7 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# Install system dependencies including Tesseract
+# Install system dependencies including Tesseract and utilities
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     libtesseract-dev \
@@ -25,17 +25,16 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy app files into the container
+# Copy all application code into the container
 COPY . .
 
-# Expose the default Streamlit port
+# Expose default Streamlit port
 EXPOSE 8501
 
-# Set the Streamlit config to avoid asking for a browser
+# Streamlit environment configurations
 ENV STREAMLIT_SERVER_HEADLESS=true
 ENV STREAMLIT_SERVER_PORT=8501
 ENV STREAMLIT_SERVER_ENABLECORS=false
 
-# Run the Streamlit app
+# Start the Streamlit app
 CMD ["streamlit", "run", "main.py"]
-
