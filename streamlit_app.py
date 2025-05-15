@@ -201,28 +201,25 @@ def main():
                                 """, unsafe_allow_html=True)
                     st.markdown("</div>", unsafe_allow_html=True)
 
-     
-            # Full PDF Preview at Top with Horizontal Scrolling
-           if pdf_path and os.path.exists(pdf_path):
-               with open(pdf_path, "rb") as f:
-                   base64_pdf = base64.b64encode(f.read()).decode("utf-8")
-               pdf_display = f"""
-                   <div style="overflow-x: auto; overflow-y: hidden; border: 1px solid #ccc; border-radius: 8px;">
-                       <iframe 
-                           src="data:application/pdf;base64,{base64_pdf}#view=FitH" 
-                           width="100%" 
-                           height="800px" 
-                           type="application/pdf"
-                           style="min-width: 1200px; border: none;">
-                       </iframe>
-                   </div>
-               """
-               st.markdown("### 📄 Full PDF Preview", unsafe_allow_html=True)
-               st.markdown(pdf_display, unsafe_allow_html=True)
-           else:
-               st.warning("PDF not found. Please upload a resume first.")
-
-
+            # Full PDF Preview
+            if pdf_path and os.path.exists(pdf_path):
+                with open(pdf_path, "rb") as f:
+                    base64_pdf = base64.b64encode(f.read()).decode("utf-8")
+                pdf_display = f"""
+                    <div style="overflow-x: auto; overflow-y: hidden; border: 1px solid #ccc; border-radius: 8px;">
+                        <iframe 
+                            src="data:application/pdf;base64,{base64_pdf}#view=FitH" 
+                            width="100%" 
+                            height="800px" 
+                            type="application/pdf"
+                            style="min-width: 1200px; border: none;">
+                        </iframe>
+                    </div>
+                """
+                st.markdown("### 📄 Full PDF Preview", unsafe_allow_html=True)
+                st.markdown(pdf_display, unsafe_allow_html=True)
+            else:
+                st.warning("PDF not found. Please upload a resume first.")
     else:
         st.markdown("""
             <div style="text-align: center; padding: 4rem 0; opacity: 0.8;">
