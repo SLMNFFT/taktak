@@ -9,6 +9,9 @@ from fpdf import FPDF
 import pyttsx3
 import io
 
+import streamlit as st
+
+st.markdown("""
 <style>
 /* ===== Streamlit Columns Flex Fix ===== */
 [data-testid="stColumns"] {
