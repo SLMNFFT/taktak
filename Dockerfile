@@ -12,6 +12,11 @@ RUN apt-get update && apt-get install -y \
     libavdevice-dev \
     libavformat-dev \
     libswscale-dev \
+    libavcodec-dev \
+    libavutil-dev \
+    pkg-config \                # <== Needed for PyAV (used by aiortc)
+    build-essential \           # <== Ensures langdetect compiles and others install cleanly
+    python3-dev \               # <== Required for native extensions
     python3-distutils \
     && rm -rf /var/lib/apt/lists/*
 
@@ -24,3 +29,4 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY . .
 
 CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+
