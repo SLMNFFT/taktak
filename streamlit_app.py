@@ -47,7 +47,16 @@ st.markdown("""
         border-radius: 15px;
         padding: 1.5rem;
         height: 70vh;
-        overflow-y: auto;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    .preview-image {
+        display: inline-block;
+        width: auto;
+        max-height: 500px;
+        margin-right: 1rem;
+        border-radius: 8px;
+        vertical-align: top;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -96,7 +105,6 @@ def main():
             <h1 style="color: white; margin: 0;">🎧 PeePit</h1>
             <p style="color: rgba(255,255,255,0.8); font-size: 1.1rem;">
                 Legere eam Drusus</p>
-                
                 Transform your doc into immersive mp3 
             (no PDF images and image PDFs)
         </div>
@@ -150,15 +158,13 @@ def main():
 
             col_left, col_right = st.columns(2)
 
-            # Extract text with fallback to OCR
             with st.spinner("📜 Extracting text..."):
                 full_text = extract_text_from_pdf(pdf_path, selected_pages)
 
-            # Display Extracted Text
             with col_left:
                 with st.expander("📜 Extracted Text", expanded=True):
                     st.markdown(f"""
-                        <div class="preview-card">
+                        <div class="preview-card" style="overflow-y:auto;">
                             <pre>{full_text}</pre>
                         </div>
                     """, unsafe_allow_html=True)
@@ -185,7 +191,6 @@ def main():
             else:
                 st.warning("⚠️ No text found to convert.")
 
-            # Image preview
             with col_right:
                 with st.expander("🖼️ Visual Preview", expanded=True):
                     st.markdown("""<div class="preview-card">""", unsafe_allow_html=True)
@@ -195,21 +200,18 @@ def main():
                                 img = page.to_image(resolution=150).original
                                 img_base64 = pil_to_base64(img)
                                 st.markdown(f"""
-                                    <div style="margin-bottom: 2rem;">
-                                        <img src="data:image/png;base64,{img_base64}" style="width:100%; border-radius: 8px;">
+                                    <div class="preview-image">
+                                        <img src="data:image/png;base64,{img_base64}" style="max-height:500px;">
                                         <p style="text-align: center; color: #aaa;">Page {i + 1}</p>
                                     </div>
                                 """, unsafe_allow_html=True)
                     st.markdown("</div>", unsafe_allow_html=True)
 
-
-            # Full PDF Preview using file URL workaround
             if pdf_path and os.path.exists(pdf_path):
                 st.markdown("### 📄 Full PDF Preview", unsafe_allow_html=True)
                 pdf_viewer_url = f"https://docs.google.com/gview?url=file://{pdf_path}&embedded=true"
-    
+
                 try:
-                    # Streamlit can't serve local files via URL, so use components.iframe only for remote files
                     if pdf_url:
                         st.components.v1.iframe(pdf_viewer_url, height=800, scrolling=True)
                     else:
