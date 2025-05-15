@@ -76,7 +76,9 @@ st.markdown("""
         border-radius: 15px;
         padding: 1.5rem;
         position: relative;
-        transition: all 0.3s ease;
+        height: 70vh;
+        display: flex;
+        flex-direction: column;
     }
     
     ::-webkit-scrollbar { width: 8px; }
@@ -85,6 +87,18 @@ st.markdown("""
     
     .page-selector .stMultiSelect [data-baseweb=tag] {
         background-color: var(--primary) !important;
+    }
+    
+    /* Equal width columns */
+    [data-testid="column"] {
+        flex: 1 1 0%;
+        min-width: 0;
+    }
+    
+    .preview-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0.5rem;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -165,7 +179,7 @@ def main():
             )
 
             # Main Content
-            col_left, col_right = st.columns([1.2, 1], gap="large")
+            col_left, col_right = st.columns([1, 1], gap="large")
             
             # Text Preview
             with col_left:
@@ -178,8 +192,8 @@ def main():
                     
                     st.markdown(f"""
                         <div class="preview-card">
-                            <div style="max-height: 60vh; overflow-y: auto;">
-                                <pre style="color: #e0e0e0; white-space: pre-wrap; font-family: 'Inter';">{full_text}</pre>
+                            <div class="preview-content">
+                                <pre style="color: #e0e0e0; white-space: pre-wrap; font-family: 'Inter'; margin: 0;">{full_text}</pre>
                             </div>
                         </div>
                     """, unsafe_allow_html=True)
@@ -211,7 +225,7 @@ def main():
                 with st.expander("🖼️ Visual Preview", expanded=True):
                     st.markdown("""
                         <div class="preview-card">
-                            <div style="max-height: 70vh; overflow-y: auto; padding: 1rem;">
+                            <div class="preview-content" style="padding: 1rem;">
                     """, unsafe_allow_html=True)
                     
                     with pdfplumber.open(pdf_path) as pdf:
