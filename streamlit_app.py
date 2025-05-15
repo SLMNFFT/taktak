@@ -9,62 +9,127 @@ from fpdf import FPDF
 import pyttsx3
 import io
 
-# --- STYLES ---
-st.markdown("""
-    <style>
-   .preview-card {
-    background: #1A1B2F;
-    border-radius: 15px;
-    padding: 1.5rem 1.5rem 1.5rem 0.5rem;
-    height: 70vh;
+<style>
+/* ===== Streamlit Columns Flex Fix ===== */
+[data-testid="stColumns"] {
     display: flex;
-    flex-direction: column;
+    align-items: stretch; /* equal height columns */
+    gap: 2rem; /* space between columns */
 }
 
+/* ===== Preview Card Styling ===== */
+.preview-card {
+    background: #1A1B2F;
+    border-radius: 15px;
+    padding: 1.5rem;
+    height: 100% !important; /* full height of the column */
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 15px rgba(10, 10, 30, 0.5);
+    transition: background 0.3s ease;
+}
+
+.preview-card:hover {
+    background: #252742;
+}
+
+/* ===== Scroll Container (for scrollable content) ===== */
 .scroll-container {
     flex: 1;
     overflow-y: auto;
     padding-right: 0.5rem;
-    padding-left: 0;
-    padding-top: 0;
-    margin-top: 0;
+    scrollbar-width: thin;
+    scrollbar-color: #4e5aee #1A1B2F;
 }
 
+.scroll-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.scroll-container::-webkit-scrollbar-track {
+    background: #1A1B2F;
+    border-radius: 10px;
+}
+
+.scroll-container::-webkit-scrollbar-thumb {
+    background-color: #4e5aee;
+    border-radius: 10px;
+    border: 2px solid #1A1B2F;
+}
+
+/* ===== Preview Image Container (Grid of images) ===== */
 .preview-image-container {
     display: grid;
-    gap: 0.5rem;
+    gap: 1rem; /* Reduced gap for tighter grid */
     padding-bottom: 1rem;
-    margin-left: 0;
-    padding-left: 0;
+    margin-top: 0; /* Remove any top margin */
 }
 
-.preview-image:first-child {
-    margin-top: 0;
-    padding-top: 0;
-}
-
-.preview-image:first-child img {
-    margin-top: 0;
-}
-
-.preview-image:first-child p {
-    margin-top: 0;
-    padding-top: 0;
-}
-
+/* ===== Individual Preview Image Card ===== */
 .preview-image {
     background: #2B2D42;
     border-radius: 8px;
     padding: 0.5rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
+/* Remove top margin from the first preview image to eliminate gap */
+.preview-image:first-child {
+    margin-top: 0;
+}
+
+/* ===== Image Styling ===== */
 .preview-image img {
     border-radius: 6px;
     margin-bottom: 0.5rem;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    user-select: none;
 }
 
-    </style>
+/* ===== Caption under each image ===== */
+.preview-image p {
+    text-align: center;
+    color: #888;
+    margin: 0;
+    font-size: 0.9rem;
+    font-style: italic;
+    user-select: none;
+}
+
+/* ===== General Body & Text Styling ===== */
+body, pre {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #ddd;
+    background-color: #0f1123;
+}
+
+/* Preformatted text scroll area styling */
+pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+/* ===== Buttons, Inputs, Toggles (Streamlit default overrides can be added here) ===== */
+/* Add your custom button/input styles here if needed */
+
+/* ===== Responsive tweaks ===== */
+@media (max-width: 768px) {
+    [data-testid="stColumns"] {
+        flex-direction: column;
+    }
+    .preview-card {
+        height: auto !important;
+        margin-bottom: 1rem;
+    }
+}
+</style>
 """, unsafe_allow_html=True)
 
 # --- HELPER FUNCTIONS ---
