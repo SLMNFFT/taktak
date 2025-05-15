@@ -124,7 +124,7 @@ def save_images_as_pdf(images):
 
 # --- MAIN APP ---
 def main():
-    st.title("📄 PDF Analyzer with OCR, Audio & Preview")
+    st.title("📄 PeePit - PDF2MP3")
 
     pdf_file = st.file_uploader("Upload PDF", type=["pdf"])
     pdf_url = st.text_input("Or enter a PDF URL")
