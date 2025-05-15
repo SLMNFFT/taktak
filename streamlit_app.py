@@ -270,86 +270,28 @@ def main():
             search_term = st.text_input("🔎 Search within text", "")
             show_ocr = st.checkbox("👁️ Show OCR text", value=True)
 
-            if not show_ocr and ocr_pages:
-                # Remove OCR pages text from display
-                pattern = r"(--- Page (\d+).*?)(?=--- Page \d+|$)"
-                matches = re.findall(pattern, full_text, re.DOTALL)
-                filtered_text = ""
-                for full_match, page_num_str in matches:
-                    page_num = int(page_num_str)
-                    if page_num not in ocr_pages:
-                        filtered_text += full_match + "\n\n"
-                text_to_show = filtered_text.strip()
-            else:
-                text_to_show = full_text
-
+            if not show_ocr:
+                full_text = re.sub(r"---.*?---\n", "", full_text)
+            
             if search_term:
-                # Highlight matches case-insensitive
-                safe_term = re.escape(search_term)
-                highlight_html = re.sub(f"({safe_term})", r'<mark>\1</mark>', text_to_show, flags=re.I)
-                st.markdown(f"<pre style='color:#ddd;background:#0f1123;padding:10px;border-radius:8px;white-space:pre-wrap;'>{highlight_html}</pre>", unsafe_allow_html=True)
-            else:
-                st.text_area("Extracted text", value=text_to_show, height=320)
+                full_text = re.sub(search_term, f"<mark>{search_term}</mark>", full_text, flags=re.IGNORECASE)
+            
+            st.markdown(f"<div class='scroll-container'>{full_text}</div>", unsafe_allow_html=True)
 
-        lang = st.selectbox("Select language", options=["en", "es", "fr", "de"], index=0)
-        gender = st.selectbox("Select gender (note: gTTS ignores this)", options=["male", "female"])
-        rate = st.slider("Select speed", 0.5, 2.0, 1.0, 0.1)
-
-        audio_path = None
-        if st.button("🎙️ Generate Audio"):
-            with st.spinner("Converting text to speech..."):
-                audio_path = generate_audio(full_text, lang=lang, rate=rate, gender=gender)
-            st.success("Audio generated!")
-            with open(audio_path, "rb") as f:
-                audio_bytes = f.read()
-            st.audio(audio_bytes, format="audio/mp3")
-            # Optionally clean up audio file
-            # os.remove(audio_path)
+        with st.expander("🔊 Generate Audio"):
+            if st.button("🎧 Create Audio from Text"):
+                audio_path = generate_audio(full_text)
+                st.audio(audio_path)
 
     # --- RIGHT COLUMN: IMAGE PREVIEW ---
     with col_right:
-        with st.expander("🖼️ Preview Images from PDF", expanded=True):
+        with st.expander("📸 Image Preview (OCR Pages)", expanded=True):
             images = []
-            try:
-                with pdfplumber.open(pdf_path) as pdf:
-                    for p in selected_pages:
-                        if 1 <= p <= len(pdf.pages):
-                            page = pdf.pages[p - 1]
-                            imgs = page.images
-                            if imgs:
-                                for img_dict in imgs:
-                                    try:
-                                        # pdfplumber coordinates: x0, top, x1, bottom
-                                        # Crop in correct order: (x0, top, x1, bottom)
-                                        cropped_img = page.crop((img_dict["x0"], img_dict["top"], img_dict["x1"], img_dict["bottom"])).to_image(resolution=150).original
-                                        images.append(cropped_img)
-                                    except Exception as e:
-                                        st.warning(f"Failed to crop image on page {p}: {e}")
-            except Exception as e:
-                st.warning(f"Failed to extract images: {e}")
-
-            if images:
-                st.write(f"Found {len(images)} images in selected pages.")
-                grid_cols = st.columns(3)
-                for i, img in enumerate(images):
-                    with grid_cols[i % 3]:
-                        st.image(img, use_column_width=True)
-            else:
-                st.info("No images found in the selected pages.")
-
-        if images:
-            if st.button("🖼️ Export all images as PDF"):
-                export_pdf_path = save_images_as_pdf(images)
-                with open(export_pdf_path, "rb") as f:
-                    b64 = base64.b64encode(f.read()).decode()
-                href = f'<a href="data:application/pdf;base64,{b64}" download="exported_images.pdf">Download PDF with images</a>'
-                st.markdown(href, unsafe_allow_html=True)
-                # Optionally remove file after download
-                # os.remove(export_pdf_path)
-
-    # Cleanup temp file on exit or next run (optional)
-    # if pdf_path and os.path.exists(pdf_path):
-    #     os.remove(pdf_path)
+            for page_num in ocr_pages:
+                image_path = tempfile.mktemp(suffix=f"_{page_num}.png")
+                image = Image.open(image_path)
+                images.append(image)
+            st.image(images, use_column_width=True)
 
 if __name__ == "__main__":
     main()
