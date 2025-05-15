@@ -1,27 +1,41 @@
-FROM python:3.12-slim
+# Base image with Python and necessary system tools
+FROM python:3.11-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Install system dependencies including Tesseract
+RUN apt-get update && apt-get install -y \
+    tesseract-ocr \
+    libtesseract-dev \
+    poppler-utils \
     build-essential \
-    pkg-config \
-    ffmpeg \
-    libopus-dev \
-    libavformat-dev \
-    libavcodec-dev \
-    libavdevice-dev \
-    libavfilter-dev \
-    libavutil-dev \
-    libswscale-dev \
-    libavresample-dev \
+    libgl1 \
+    curl \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Set work directory
 WORKDIR /app
 
-COPY requirements.txt /app/requirements.txt
+# Copy requirements file
+COPY requirements.txt .
 
-RUN pip install --upgrade pip setuptools wheel
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN pip install -r requirements.txt
+# Copy app files into the container
+COPY . .
 
-COPY . /app
+# Expose the default Streamlit port
+EXPOSE 8501
 
-CMD ["streamlit", "run", "your_app.py"]
+# Set the Streamlit config to avoid asking for a browser
+ENV STREAMLIT_SERVER_HEADLESS=true
+ENV STREAMLIT_SERVER_PORT=8501
+ENV STREAMLIT_SERVER_ENABLECORS=false
+
+# Run the Streamlit app
+CMD ["streamlit", "run", "main.py"]
+
