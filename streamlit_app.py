@@ -94,7 +94,7 @@ def main():
         <div class="header-gradient">
             <h1 style="color: white; margin: 0;">🎧 PeePit</h1>
             <p style="color: rgba(255,255,255,0.8); font-size: 1.1rem;">
-                "Legere eam Drusus"</p>
+                Legere eam Drusus</p>
                 
              <p style="color: rgba(255,255,255,0.8); font-size: 1.1rem;">
                 Transform your doc into immersive mp3 Audiobook</p>
