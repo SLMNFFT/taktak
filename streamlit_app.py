@@ -10,6 +10,7 @@ import pyttsx3
 import io
 from gtts import gTTS
 import os
+from pdf2image import convert_from_path
 
 st.set_page_config(
     page_title="Peepit Audiobook",
@@ -74,6 +75,8 @@ body, pre {
 .preview-image-container {
     display: grid;
     gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    padding: 1rem;
 }
 
 .preview-image {
@@ -103,7 +106,6 @@ def pil_to_base64(img):
     return base64.b64encode(buffered.getvalue()).decode()
 
 def extract_text_with_ocr(pdf_path, pages):
-    from pdf2image import convert_from_path
     import pytesseract
     text = ""
     images = convert_from_path(pdf_path, dpi=300, first_page=min(pages), last_page=max(pages))
@@ -166,6 +168,10 @@ def save_images_as_pdf(images):
     
     return pdf_path
 
+def generate_pdf_preview(pdf_path):
+    images = convert_from_path(pdf_path, dpi=100)
+    return images
+
 
 # --- MAIN APP ---
 
@@ -196,6 +202,30 @@ def main():
             pdf_path = tmp.name
 
     if pdf_path:
+        # --- PDF Preview ---
+        st.subheader("📄 Full PDF Preview")
+
+        # Generate preview images
+        images = generate_pdf_preview(pdf_path)
+
+        # Display the preview images in a grid
+        col_count = 3  # Number of columns for the grid layout
+        grid_images = []
+
+        for i, img in enumerate(images):
+            # Resize image to fit in grid
+            img.thumbnail((200, 200))
+            grid_images.append(img)
+
+        # Display images in a grid layout
+        with st.container():
+            st.write("Click on an image to view it in full size.")
+            cols = st.columns(col_count)
+            for i, img in enumerate(grid_images):
+                with cols[i % col_count]:
+                    st.image(img, caption=f"Page {i+1}", use_column_width=True)
+
+        # --- PDF Text Extraction ---
         reader = PdfReader(pdf_path)
         total_pages = len(reader.pages)
         selected_pages = st.multiselect("Select pages to process", list(range(1, total_pages + 1)), default=[1])
@@ -242,26 +272,16 @@ def main():
                 with st.expander("🔊 Audio Playback", expanded=True):
                     lang = st.radio("Select language", ("en", "es", "fr", "de"))
                     rate = st.slider("Speed", 0.5, 2.0, 1.0, 0.1)
-                    gender = st.radio("Select voice type", ("male", "female"))
+                    gender = st.radio("Select Gender", ("male", "female"))
 
-                    audio_path = generate_audio(filtered_text, lang=lang, rate=rate, gender=gender)
-                    audio_file = open(audio_path, "rb")
-                    audio_bytes = audio_file.read()
-                    st.audio(audio_bytes, format="audio/mp3")
+                    if st.button("Generate Audio"):
+                        st.info("🔄 Generating Audio...")
 
-            # --- IMAGE EXPORT (Temporary Images) ---
-            # Create dummy images as examples
-            image1 = Image.new("RGB", (300, 300), color="blue")
-            image2 = Image.new("RGB", (300, 300), color="green")
-            
-            st.download_button(
-                "📥 Export PDF", 
-                save_images_as_pdf([image1, image2]), 
-                "exported_images.pdf", 
-                "application/pdf", 
-                key="export_pdf"
-            )
+                        audio_path = generate_audio(full_text, lang, rate, gender)
+                        st.audio(audio_path)
 
+                    st.warning("🎧 Click the 'Generate Audio' button to listen to the document.")
+    
 
 if __name__ == "__main__":
     main()
