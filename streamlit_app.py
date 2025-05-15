@@ -130,7 +130,7 @@ def main():
     # Hero Section
     st.markdown("""
         <div class="header-gradient">
-            <h1 style="color: white; margin: 0;">Mogontia Audiobook</h1>
+            <h1 style="color: white; margin: 0;">PeePit Audiobook</h1>
             <p style="color: rgba(255,255,255,0.8); font-size: 1.1rem;">
                 Transform documents into immersive audio experiences
             </p>
