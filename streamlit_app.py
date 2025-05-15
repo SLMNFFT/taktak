@@ -289,36 +289,25 @@ def main():
                             flags=re.DOTALL,
                         )
 
-                    st.markdown(f"<div class='scroll-container'>{filtered_text}</div>", unsafe_allow_html=True)
+                    st.markdown(filtered_text.replace("\n", "<br>").replace("  ", " "), unsafe_allow_html=True)
 
-                    audio_file = generate_audio(filtered_text)
-                    st.audio(audio_file)
-
-            # --- RIGHT COLUMN: PREVIEW CARD ---
+            # --- RIGHT COLUMN: AUDIO ---
             with col_right:
-                with st.expander("📸 Preview Images"):
-                    preview_images = []
+                with st.expander("🔊 Audio Playback", expanded=True):
+                    lang = st.radio("Select language", ("en", "es", "fr", "de"))
+                    rate = st.slider("Speed", 0.5, 2.0, 1.0, 0.1)
+                    gender = st.radio("Select voice type", ("male", "female"))
 
-                    for page_num in selected_pages:
-                        page = reader.pages[page_num - 1]
-                        images = page.extract_images()
-                        for img in images:
-                            image_data = img['image']
-                            image = Image.open(io.BytesIO(image_data))
-                            preview_images.append(image)
+                    audio_path = generate_audio(filtered_text, lang=lang, rate=rate, gender=gender)
+                    audio_file = open(audio_path, "rb")
+                    audio_bytes = audio_file.read()
+                    st.audio(audio_bytes, format="audio/mp3")
 
-                    preview_pdf = save_images_as_pdf(preview_images)
-                    with open(preview_pdf, "rb") as f:
-                        st.download_button(
-                            "📥 Download Preview PDF", f, file_name="preview_images.pdf"
-                        )
+            # --- Image Export ---
+            st.download_button("📥 Export PDF", save_images_as_pdf(["image1", "image2"]), "exported.pdf", "application/pdf")
 
-                    if preview_images:
-                        st.write("📷 Images found in the document:")
-                        for i, img in enumerate(preview_images, 1):
-                            st.image(img, width=150, caption=f"Page {i}")
-                    else:
-                        st.write("No images found in the selected pages")
+    else:
+        st.info("Please upload a PDF or provide a valid PDF URL.")
 
 if __name__ == "__main__":
     main()
