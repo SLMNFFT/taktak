@@ -253,35 +253,19 @@ def main():
             st.text_input("Or enter a PDF URL", key="centered_url")
         return
 
+    # If file uploaded or URL provided, process file as before
+    pdf_path = None
+    if pdf_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            tmp.write(pdf_file.read())
+            pdf_path = tmp.name
+    # Add your PDF downloading logic if pdf_url is provided, if needed
 
-
-    st.markdown("""
-    <h1 style='
-        background: #2ecc71;
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 12px;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        font-weight: 600;
-        margin-top: 0;
-    '>🎧 PeePit</h1>
-    """, unsafe_allow_html=True)
-
-    reader = PdfReader(pdf_path)
-    total_pages = len(reader.pages)
-    selected_pages = st.multiselect("Select pages to process", list(range(1, total_pages + 1)), default=[1])
-
-    if not selected_pages:
-        st.error("Please select at least one valid page")
+    if not pdf_path:
+        st.warning("Please upload a PDF file to continue.")
         return
 
-    with st.spinner("🔍 Analyzing document..."):
-        full_text, ocr_pages = extract_text_from_pdf(pdf_path, selected_pages)
-        if not full_text:
-            st.error("No extractable text found in selected pages")
-            return
+
 
         col_left, col_right = st.columns(2)
 
