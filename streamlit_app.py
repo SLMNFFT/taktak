@@ -223,7 +223,6 @@ def main():
     pdf_url = st.text_input("Or enter a PDF URL")
 
     if not pdf_file and not pdf_url:
-        # Centered layout before upload
         st.markdown("""
         <div class="centered-container">
             <h1 style='
@@ -235,21 +234,22 @@ def main():
                 text-align: center;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                 font-weight: 600;
-                margin: 0;
+                margin: 0 0 1rem 0;
                 width: 100%;
                 max-width: 480px;
             '>🎧 PeePit</h1>
-            <div style="width: 100%; max-width: 480px;">
+            <div style="width: 100%; max-width: 600px;">
                 <p style="color: #ddd; text-align:center;">Upload a PDF file or enter a URL to get started</p>
             </div>
-            <div style="width: 100%; max-width: 480px;">
-                <!-- File uploader and URL input in same width -->
+
+            <div style="width: 100%; max-width: 600px;">
+                <!-- Center uploader and URL side by side -->
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-        # Show uploader + URL input centered using columns hack
-        col1, col2, col3 = st.columns([1, 2, 1])
+        # Use Streamlit columns for uploader + URL input horizontally centered
+        col1, col2, col3 = st.columns([1, 3, 1])
         with col2:
             st.file_uploader("Turn your PDF to a MP3 file.  (PDF images and image PDFs are not supported)", type=["pdf"], key="centered_uploader")
             st.text_input("Or enter a PDF URL", key="centered_url")
