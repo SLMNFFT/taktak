@@ -13,13 +13,10 @@ RUN apt-get update && apt-get install -y \
     poppler-utils \
     build-essential \
     libgl1 \
-    curl \
     ghostscript \
+    curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
-# Add Poppler to PATH (usually not needed, but safe to ensure it's visible)
-ENV PATH="/usr/bin:$PATH"
 
 # Set working directory
 WORKDIR /app
@@ -34,10 +31,5 @@ COPY . .
 # Expose Streamlit port
 EXPOSE 8501
 
-# Streamlit settings
-ENV STREAMLIT_SERVER_HEADLESS=true
-ENV STREAMLIT_SERVER_PORT=8501
-ENV STREAMLIT_SERVER_ENABLECORS=false
-
-# Run the Streamlit app
-CMD ["streamlit", "run", "main.py"]
+# Run app
+CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.enableCORS=false"]
