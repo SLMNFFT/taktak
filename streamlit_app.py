@@ -12,10 +12,10 @@ import io
 # --- STYLES ---
 st.markdown("""
     <style>
-    .preview-card {
+   .preview-card {
     background: #1A1B2F;
     border-radius: 15px;
-    padding: 1.5rem 1.5rem 1.5rem 0.5rem; /* reduced left padding */
+    padding: 1.5rem 1.5rem 1.5rem 0.5rem;
     height: 70vh;
     display: flex;
     flex-direction: column;
@@ -25,15 +25,31 @@ st.markdown("""
     flex: 1;
     overflow-y: auto;
     padding-right: 0.5rem;
-    padding-left: 0; /* reset left padding */
+    padding-left: 0;
+    padding-top: 0;
+    margin-top: 0;
 }
 
 .preview-image-container {
     display: grid;
-    gap: 0.5rem;       /* reduced gap from 1.5rem to 0.5rem */
+    gap: 0.5rem;
     padding-bottom: 1rem;
-    margin-left: 0;    /* reset left margin */
-    padding-left: 0;   /* reset left padding */
+    margin-left: 0;
+    padding-left: 0;
+}
+
+.preview-image:first-child {
+    margin-top: 0;
+    padding-top: 0;
+}
+
+.preview-image:first-child img {
+    margin-top: 0;
+}
+
+.preview-image:first-child p {
+    margin-top: 0;
+    padding-top: 0;
 }
 
 .preview-image {
