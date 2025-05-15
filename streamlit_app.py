@@ -20,7 +20,7 @@ st.set_page_config(
     page_icon="🎧",
 )
 
-# Modern UI Styles
+# Modern UI Styles with added margin between preview blocks and better scroll control
 st.markdown("""
     <style>
     html, body, [class*="css"] {
@@ -46,13 +46,16 @@ st.markdown("""
         border-radius: 15px;
         padding: 1.5rem;
         height: 70vh;
-        overflow-x: auto;
-        white-space: nowrap;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+        margin-bottom: 1.5rem;
     }
     .preview-image {
         display: inline-block;
         max-height: 500px;
         margin-right: 1rem;
+        margin-bottom: 1rem;
         border-radius: 8px;
         vertical-align: top;
     }
@@ -64,18 +67,21 @@ st.markdown("""
     .preview-image p {
         text-align: center;
         color: #aaa;
-        margin: 0.3rem 0 0 0;  /* Remove top margin */
+        margin: 0.3rem 0 0 0;
         font-size: 0.9rem;
     }
     pre {
-        white-space: pre-wrap;
-        word-break: break-word;
         font-family: 'Courier New', monospace;
         font-size: 0.85rem;
         line-height: 1.4;
         color: #ddd;
         background-color: transparent;
         border: none;
+        margin: 0;
+    }
+    /* Add some gap between left and right columns */
+    .stColumns > div {
+        padding: 0 1rem;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -175,7 +181,7 @@ def main():
                 st.warning("Please select at least one page.")
                 return
 
-            col_left, col_right = st.columns(2)
+            col_left, col_right = st.columns([1, 1])
 
             with st.spinner("📜 Extracting text..."):
                 full_text = extract_text_from_pdf(pdf_path, selected_pages)
@@ -183,7 +189,7 @@ def main():
             with col_left:
                 with st.expander("📜 Extracted Text", expanded=True):
                     st.markdown(f"""
-                        <div class="preview-card" style="overflow-y:auto;">
+                        <div class="preview-card">
                             <pre>{full_text}</pre>
                         </div>
                     """, unsafe_allow_html=True)
@@ -211,10 +217,10 @@ def main():
             else:
                 st.warning("⚠️ No text found to convert.")
 
-            # Visual preview of selected PDF pages
+            # Visual preview of selected PDF pages with margin below images
             with col_right:
                 with st.expander("🖼️ Visual Preview", expanded=True):
-                    st.markdown("""<div class="preview-card">""", unsafe_allow_html=True)
+                    st.markdown("""<div class="preview-card" style="overflow-y:auto;">""", unsafe_allow_html=True)
                     with pdfplumber.open(pdf_path) as pdf:
                         for i, page in enumerate(pdf.pages):
                             if (i + 1) in selected_pages:
@@ -231,7 +237,6 @@ def main():
             # Full PDF preview (only works for public URLs)
             if pdf_url:
                 st.markdown("### 📄 Full PDF Preview (URL only)", unsafe_allow_html=True)
-                # Google Docs viewer only works with publicly accessible URLs, not local files
                 google_docs_url = f"https://docs.google.com/gview?url={pdf_url}&embedded=true"
                 try:
                     st.components.v1.iframe(google_docs_url, height=800, scrolling=True)
