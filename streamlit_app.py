@@ -3,7 +3,7 @@ import re
 import tempfile
 import base64
 import pdfplumber
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 from PIL import Image
 from fpdf import FPDF
 import pyttsx3
