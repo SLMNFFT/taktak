@@ -11,6 +11,12 @@ import io
 
 import streamlit as st
 
+st.set_page_config(
+    page_title="Peepit Audiobook",
+    layout="wide",
+    page_icon="🎧",
+)
+
 st.markdown("""
 <style>
 /* ===== Streamlit Columns Flex Fix ===== */
