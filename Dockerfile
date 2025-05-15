@@ -2,11 +2,11 @@
 FROM python:3.11-slim
 
 # Environment settings
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-# Install dependencies including Tesseract and English language pack
-RUN apt-get update && apt-get install -y \
+# Install dependencies including Tesseract and English language pack, poppler-utils, etc.
+RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
     tesseract-ocr-eng \
     libtesseract-dev \
@@ -30,10 +30,11 @@ COPY . .
 # Expose Streamlit port
 EXPOSE 8501
 
-# Streamlit settings
+# Streamlit environment variables
 ENV STREAMLIT_SERVER_HEADLESS=true
 ENV STREAMLIT_SERVER_PORT=8501
 ENV STREAMLIT_SERVER_ENABLECORS=false
+ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
 
-# Run the Streamlit app
-CMD ["streamlit", "run", "main.py"]
+# Run the Streamlit app, explicitly binding host to 0.0.0.0
+CMD ["streamlit", "run", "main.py", "--server.address=0.0.0.0", "--server.port=8501"]
