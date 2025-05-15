@@ -14,17 +14,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libavresample-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy your requirements.txt into the container
-COPY requirements.txt /app/requirements.txt
-
 WORKDIR /app
 
+# Copy requirements.txt before installing
+COPY requirements.txt /app/requirements.txt
+
+# Upgrade pip, setuptools, wheel first (wheel is helpful for building wheels)
+RUN pip install --upgrade pip setuptools wheel
+
 # Install python dependencies
-RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# Copy your app code (if any)
+# Copy your app code
 COPY . /app
 
-# Your command here (example)
+# Default command (adjust 'your_app.py' to your main script)
 CMD ["streamlit", "run", "your_app.py"]
