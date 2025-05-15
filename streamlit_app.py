@@ -11,14 +11,14 @@ import base64
 import os
 
 st.set_page_config(
-    page_title="Mogontia Audiobook",
+    page_title="Peepit Audiobook",
     layout="wide",
     page_icon="🎧",
     menu_items={
         'Get Help': 'https://github.com/mogontia/audiobook-gen',
         'Report a bug': "https://github.com/mogontia/audiobook-gen/issues",
         'About': """
-        ## 🎧 Mogontia Audiobook Generator 
+        ## 🎧 PeePit Audiobook Generator 
         **Version 2.1**  
         Transform documents into immersive audio experiences  
         """
