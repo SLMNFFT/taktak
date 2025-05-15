@@ -13,39 +13,41 @@ import io
 st.markdown("""
     <style>
     .preview-card {
-        background: #1A1B2F;
-        border-radius: 15px;
-        padding: 1.5rem;
-        height: 70vh;
-        display: flex;
-        flex-direction: column;
-    }
-    .scroll-container {
-        flex: 1;
-        overflow-y: auto;
-        padding-right: 0.5rem;
-    }
-    .preview-image-container {
-        display: grid;
-        gap: 1.5rem;
-        padding-bottom: 1rem;
-    }
-    .preview-image {
-        background: #2B2D42;
-        border-radius: 8px;
-        padding: 0.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    }
-    .preview-image img {
-        border-radius: 6px;
-        margin-bottom: 0.5rem;
-    }
-    .preview-image p {
-        text-align: center;
-        color: #888;
-        margin: 0;
-        font-size: 0.9rem;
-    }
+    background: #1A1B2F;
+    border-radius: 15px;
+    padding: 1.5rem 1.5rem 1.5rem 0.5rem; /* reduced left padding */
+    height: 70vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.scroll-container {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+    padding-left: 0; /* reset left padding */
+}
+
+.preview-image-container {
+    display: grid;
+    gap: 0.5rem;       /* reduced gap from 1.5rem to 0.5rem */
+    padding-bottom: 1rem;
+    margin-left: 0;    /* reset left margin */
+    padding-left: 0;   /* reset left padding */
+}
+
+.preview-image {
+    background: #2B2D42;
+    border-radius: 8px;
+    padding: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.preview-image img {
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+}
+
     </style>
 """, unsafe_allow_html=True)
 
