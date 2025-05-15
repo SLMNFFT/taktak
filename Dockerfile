@@ -1,13 +1,14 @@
-# Use slim Python 3.11 as the base image
+# Base image with Python and system tools
 FROM python:3.11-slim
 
-# Avoid writing .pyc files and keep logs unbuffered
+# Environment settings
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# Install system dependencies (Tesseract, Poppler, etc.)
+# Install dependencies including Tesseract and English language pack
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
+    tesseract-ocr-eng \
     libtesseract-dev \
     poppler-utils \
     build-essential \
@@ -19,22 +20,20 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy the requirements file into the container
+# Copy requirements and install Python packages
 COPY requirements.txt .
-
-# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy all application code into the image
+# Copy app code
 COPY . .
 
-# Expose the default port used by Streamlit
+# Expose Streamlit port
 EXPOSE 8501
 
-# Streamlit server configuration via environment variables
+# Streamlit settings
 ENV STREAMLIT_SERVER_HEADLESS=true
 ENV STREAMLIT_SERVER_PORT=8501
 ENV STREAMLIT_SERVER_ENABLECORS=false
 
-# Command to run the app
+# Run the Streamlit app
 CMD ["streamlit", "run", "main.py"]
