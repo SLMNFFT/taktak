@@ -167,7 +167,6 @@ def extract_text_from_pdf(pdf_path, selected_pages):
 
 
 def generate_audio(text, lang="en", rate=1.0, gender="male"):
-    # gTTS does not support rate or gender, ignoring those params for now
     tts = gTTS(text=text, lang=lang, slow=(rate < 1.0))
     temp_audio_path = tempfile.mktemp(suffix=".mp3")
     tts.save(temp_audio_path)
@@ -256,42 +255,14 @@ def main():
         st.error("Please select at least one valid page")
         return
 
-    with st.spinner("🔍 Analyzing document..."):
-        full_text, ocr_pages = extract_text_from_pdf(pdf_path, selected_pages)
-        if not full_text:
-            st.error("No extractable text found in selected pages")
-            return
-
-    col_left, col_right = st.columns(2)
-
-    # --- LEFT COLUMN: TEXT + AUDIO ---
-    with col_left:
-        with st.expander("📜 Extracted Text", expanded=True):
-            search_term = st.text_input("🔎 Search within text", "")
-            show_ocr = st.checkbox("👁️ Show OCR text", value=True)
-
-            if not show_ocr:
-                full_text = re.sub(r"---.*?---\n", "", full_text)
-            
-            if search_term:
-                full_text = re.sub(search_term, f"<mark>{search_term}</mark>", full_text, flags=re.IGNORECASE)
-            
-            st.markdown(f"<div class='scroll-container'>{full_text}</div>", unsafe_allow_html=True)
-
-        with st.expander("🔊 Generate Audio"):
-            if st.button("🎧 Create Audio from Text"):
-                audio_path = generate_audio(full_text)
-                st.audio(audio_path)
-
-    # --- RIGHT COLUMN: IMAGE PREVIEW ---
-    with col_right:
-        with st.expander("📸 Image Preview (OCR Pages)", expanded=True):
-            images = []
-            for page_num in ocr_pages:
-                image_path = tempfile.mktemp(suffix=f"_{page_num}.png")
-                image = Image.open(image_path)
-                images.append(image)
-            st.image(images, use_column_width=True)
-
-if __name__ == "__main__":
-    main()
+    # --- Left Column: Full PDF Preview ---
+    with st.expander("📄 Full PDF Preview", expanded=True):
+        st.write("**PDF Pages**")
+        images = []
+        with pdfplumber.open(pdf_path) as pdf:
+            for page_num in selected_pages:
+                page = pdf.pages[page_num - 1]
+                img = page.to_image()
+                images.append(img.original)
+        for img in images:
+            st.image(img
