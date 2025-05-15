@@ -1,7 +1,7 @@
 streamlit>=1.32
 pypdf>=3.17.4
+langdetect>=1.0.9
 gTTS>=2.4
 pdfplumber>=0.10
-langdetect>=1.0.9
 requests>=2.31
 Pillow>=10.2
