@@ -19,13 +19,13 @@ st.set_page_config(
         'Report a bug': "https://github.com/mogontia/audiobook-gen/issues",
         'About': """
         ## 🎧 Mogontia Audiobook Generator 
-        **Version 2.0**  
+        **Version 2.1**  
         Transform documents into immersive audio experiences  
         """
     }
 )
 
-# Modern UI Styles
+# Modern UI Styles with Mobile Fixes
 st.markdown("""
     <style>
     :root {
@@ -85,20 +85,38 @@ st.markdown("""
     ::-webkit-scrollbar-track { background: #1A1B2F; }
     ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
     
-    .page-selector .stMultiSelect [data-baseweb=tag] {
-        background-color: var(--primary) !important;
-    }
-    
-    /* Equal width columns */
-    [data-testid="column"] {
-        flex: 1 1 0%;
-        min-width: 0;
-    }
-    
     .preview-content {
         flex: 1;
         overflow-y: auto;
         padding: 0.5rem;
+    }
+    
+    @media (max-width: 768px) {
+        .header-gradient {
+            padding: 1rem 1rem 3rem;
+            margin: -1rem -1rem 1rem;
+        }
+        
+        .upload-card {
+            padding: 1rem;
+        }
+        
+        .preview-card {
+            height: 50vh !important;
+            margin-bottom: 4rem;
+        }
+        
+        .stButton>button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 999;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        [data-testid="column"] {
+            width: 100% !important;
+        }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -197,28 +215,33 @@ def main():
                             </div>
                         </div>
                     """, unsafe_allow_html=True)
+
+            # Audio Generation (Outside Scrollable Area)
+            if full_text:
+                try:
+                    detected_lang = detect(full_text[:500])
+                    lang = detected_lang
+                    st.success(f"🌍 Detected language: {detected_lang.upper()}")
                     
-                    # Audio Generation
-                    if full_text:
-                        try:
-                            detected_lang = detect(full_text[:500])
-                            lang = detected_lang
-                            st.success(f"🌍 Detected language: {detected_lang.upper()}")
-                            
-                            if st.button("🎧 Generate Audiobook", type="primary"):
-                                with st.spinner("🔊 Generating audio..."):
-                                    tts = gTTS(text=full_text, lang=lang)
-                                    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
-                                        tts.save(fp.name)
-                                        st.audio(fp.name, format="audio/mp3")
-                                        st.download_button(
-                                            "💾 Download Audiobook",
-                                            data=open(fp.name, "rb"),
-                                            file_name="audiobook.mp3",
-                                            mime="audio/mp3"
-                                        )
-                        except Exception as e:
-                            st.error(f"Error generating audio: {str(e)}")
+                    # Mobile-optimized button container
+                    button_col1, button_col2 = st.columns([1,1])
+                    with button_col1:
+                        if st.button("🎧 Generate Audiobook", type="primary"):
+                            with st.spinner("🔊 Generating audio..."):
+                                tts = gTTS(text=full_text, lang=lang)
+                                with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
+                                    tts.save(fp.name)
+                                    st.audio(fp.name, format="audio/mp3")
+                                    st.download_button(
+                                        "💾 Download Audiobook",
+                                        data=open(fp.name, "rb"),
+                                        file_name="audiobook.mp3",
+                                        mime="audio/mp3"
+                                    )
+                    with button_col2:
+                        st.caption("Quality may vary based on document complexity")
+                except Exception as e:
+                    st.error(f"Error generating audio: {str(e)}")
 
             # PDF Preview
             with col_right:
