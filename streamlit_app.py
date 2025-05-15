@@ -1,3 +1,4 @@
+
 import streamlit as st
 from pypdf import PdfReader
 from langdetect import detect
@@ -29,7 +30,7 @@ st.set_page_config(
     }
 )
 
-# CSS Styles (unchanged)
+# CSS Styles (same as yours, unchanged)
 st.markdown("""
     <style>
     :root {
