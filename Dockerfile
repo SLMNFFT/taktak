@@ -5,7 +5,7 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Install dependencies including Tesseract, Poppler, and tools for audio
+# Install system dependencies including Tesseract, Poppler, and tools for audio
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     tesseract-ocr-eng \
@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     ghostscript \
     espeak \
     ffmpeg \
+    libsndfile1 \  # Required by pyttsx3 for audio handling
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -27,7 +28,7 @@ ENV PATH="/usr/bin:$PATH"
 WORKDIR /app
 
 # Copy requirements and install Python packages
-COPY requirements.txt .
+COPY requirements.txt . 
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy app source code
