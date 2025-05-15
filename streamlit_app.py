@@ -227,7 +227,7 @@ def main():
     font-weight: 600;
     margin-top: 0;
 '>
-🎧 PeePit - PDF2MP3
+🎧 PeePit
 </h1>
 """, unsafe_allow_html=True)
 
