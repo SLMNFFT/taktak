@@ -8,7 +8,8 @@ from PIL import Image
 from fpdf import FPDF
 import pyttsx3
 import io
-
+from gtts import gTTS
+import os
 import streamlit as st
 
 st.set_page_config(
@@ -185,14 +186,12 @@ def extract_text_from_pdf(pdf_path, selected_pages):
 
     return extracted_text.strip(), valid_ocr_pages
 
-def generate_audio(text, lang="en", rate=150, gender="male"):
-    engine = pyttsx3.init()
-    voices = engine.getProperty('voices')
-    for v in voices:
-        if lang in str(v.languages).lower() and gender in v.name.lower():
-            engine.setProperty('voice', v.id)
-            break
-    engine.setProperty('rate', rate)
+
+def generate_audio(text, lang="en", rate=1.0, gender="male"):
+    tts = gTTS(text=text, lang=lang, slow=False)
+    temp_audio_path = tempfile.mktemp(suffix=".mp3")
+    tts.save(temp_audio_path)
+    return temp_audio_path
 
     temp_audio_path = tempfile.mktemp(suffix=".mp3")
     engine.save_to_file(text, temp_audio_path)
