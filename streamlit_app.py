@@ -1,4 +1,3 @@
-
 import streamlit as st
 from pypdf import PdfReader
 from langdetect import detect
