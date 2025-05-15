@@ -221,30 +221,6 @@ def main():
     pdf_url = st.text_input("Or enter a PDF URL")
 
     if not pdf_file and not pdf_url:
-        # Centered layout before upload
-        st.markdown("""
-        <div class="centered-container">
-            <h1 style='
-                background: #2ecc71;
-                color: white;
-                padding: 1rem 1.5rem;
-                border-radius: 12px;
-                font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-                text-align: center;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                font-weight: 600;
-                margin: 0;
-                width: 100%;
-                max-width: 480px;
-            '>🎧 PeePit</h1>
-            <div style="width: 100%; max-width: 480px;">
-                <p style="color: #ddd; text-align:center;">Upload a PDF file or enter a URL to get started</p>
-            </div>
-            <div style="width: 100%; max-width: 480px;">
-                <!-- File uploader and URL input in same width -->
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
 
         # Show uploader + URL input centered using columns hack
         col1, col2, col3 = st.columns([1, 2, 1])
