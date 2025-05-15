@@ -253,17 +253,7 @@ def main():
             st.text_input("Or enter a PDF URL", key="centered_url")
         return
 
-    # If file uploaded or URL provided, process file as before
-    pdf_path = None
-    if pdf_file:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-            tmp.write(pdf_file.read())
-            pdf_path = tmp.name
-    # Add your PDF downloading logic if pdf_url is provided, if needed
 
-    if not pdf_path:
-        st.warning("Please upload a PDF file to continue.")
-        return
 
     st.markdown("""
     <h1 style='
