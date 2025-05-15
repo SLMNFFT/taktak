@@ -215,7 +215,21 @@ def save_images_as_pdf(images):
 
 # --- MAIN APP ---
 def main():
-    st.title("📄 PeePit - PDF2MP3")
+    st.markdown("""
+<h1 style='
+    background: #2ecc71;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    font-weight: 600;
+    margin-top: 0;
+'>
+🎧 PeePit - PDF2MP3
+</h1>
+""", unsafe_allow_html=True)
 
     pdf_file = st.file_uploader("Turn your PDF to a MP3 file", type=["pdf"])
     pdf_url = st.text_input("Or enter a PDF URL")
