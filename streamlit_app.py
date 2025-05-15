@@ -9,7 +9,6 @@ from PIL import Image
 from io import BytesIO
 import base64
 import os
-import streamlit.components.v1 as components
 
 # OCR requirements
 import pytesseract
@@ -52,11 +51,31 @@ st.markdown("""
     }
     .preview-image {
         display: inline-block;
-        width: auto;
         max-height: 500px;
         margin-right: 1rem;
         border-radius: 8px;
         vertical-align: top;
+    }
+    .preview-image img {
+        border-radius: 8px;
+        max-height: 500px;
+        display: block;
+    }
+    .preview-image p {
+        text-align: center;
+        color: #aaa;
+        margin: 0.3rem 0 0 0;  /* Remove top margin */
+        font-size: 0.9rem;
+    }
+    pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        line-height: 1.4;
+        color: #ddd;
+        background-color: transparent;
+        border: none;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -103,10 +122,10 @@ def main():
     st.markdown("""
         <div class="header-gradient">
             <h1 style="color: white; margin: 0;">🎧 PeePit</h1>
-            <p style="color: rgba(255,255,255,0.8); font-size: 1.1rem;">
-                Legere eam Drusus</p>
-                Transform your doc into immersive mp3 
-            (no PDF images and image PDFs)
+            <p style="color: rgba(255,255,255,0.8); font-size: 1.1rem; margin-top: 0;">
+                Legere eam Drusus<br>
+                Transform your doc into immersive mp3 (no PDF images and image PDFs)
+            </p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -180,17 +199,19 @@ def main():
                             with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
                                 tts.save(fp.name)
                                 st.audio(fp.name, format="audio/mp3")
-                                st.download_button(
-                                    label="💾 Download Audiobook",
-                                    data=open(fp.name, "rb"),
-                                    file_name="audiobook.mp3",
-                                    mime="audio/mp3"
-                                )
+                                with open(fp.name, "rb") as audio_file:
+                                    st.download_button(
+                                        label="💾 Download Audiobook",
+                                        data=audio_file,
+                                        file_name="audiobook.mp3",
+                                        mime="audio/mp3"
+                                    )
                 except Exception as e:
                     st.error(f"Audio generation error: {e}")
             else:
                 st.warning("⚠️ No text found to convert.")
 
+            # Visual preview of selected PDF pages
             with col_right:
                 with st.expander("🖼️ Visual Preview", expanded=True):
                     st.markdown("""<div class="preview-card">""", unsafe_allow_html=True)
@@ -201,23 +222,23 @@ def main():
                                 img_base64 = pil_to_base64(img)
                                 st.markdown(f"""
                                     <div class="preview-image">
-                                        <img src="data:image/png;base64,{img_base64}" style="max-height:500px;">
-                                        <p style="text-align: center; color: #aaa;">Page {i + 1}</p>
+                                        <img src="data:image/png;base64,{img_base64}" />
+                                        <p>Page {i + 1}</p>
                                     </div>
                                 """, unsafe_allow_html=True)
                     st.markdown("</div>", unsafe_allow_html=True)
 
-            if pdf_path and os.path.exists(pdf_path):
-                st.markdown("### 📄 Full PDF Preview", unsafe_allow_html=True)
-                pdf_viewer_url = f"https://docs.google.com/gview?url=file://{pdf_path}&embedded=true"
-
+            # Full PDF preview (only works for public URLs)
+            if pdf_url:
+                st.markdown("### 📄 Full PDF Preview (URL only)", unsafe_allow_html=True)
+                # Google Docs viewer only works with publicly accessible URLs, not local files
+                google_docs_url = f"https://docs.google.com/gview?url={pdf_url}&embedded=true"
                 try:
-                    if pdf_url:
-                        st.components.v1.iframe(pdf_viewer_url, height=800, scrolling=True)
-                    else:
-                        st.info("Full PDF preview only works for PDF URL uploads.")
+                    st.components.v1.iframe(google_docs_url, height=800, scrolling=True)
                 except Exception as e:
                     st.error(f"Could not render full PDF preview: {e}")
+            elif pdf_file:
+                st.info("Full PDF preview only works for PDF URL uploads.")
 
     else:
         st.markdown("""
