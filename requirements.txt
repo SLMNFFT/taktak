@@ -19,6 +19,5 @@ langdetect==1.0.9
 # HTTP requests
 requests==2.31.0
 
-
-
-
+# PDF generation for export
+fpdf==1.7.2
