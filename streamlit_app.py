@@ -218,6 +218,8 @@ def save_images_as_pdf(images):
 
 # --- MAIN APP ---
 def main():
+    pdf_file = st.file_uploader("Turn your PDF to a MP3 file. (PDF images and image PDFs are not supported)", type=["pdf"])
+    pdf_url = st.text_input("Or enter a PDF URL")
 
     if not pdf_file and not pdf_url:
         # Centered layout before upload
