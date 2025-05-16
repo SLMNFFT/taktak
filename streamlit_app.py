@@ -190,7 +190,7 @@ def main():
     margin-bottom: 2rem;
     font-size: 1.5rem;
 '>
-turn yout pdf to mp3🎧 
+Turns your pdf to mp3🎧 
 </h1>
 """, unsafe_allow_html=True)
 
