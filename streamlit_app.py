@@ -232,6 +232,10 @@ def main():
     display: inline-block;
     transform: rotate(180deg);
     }
+    .emoji-top {
+    font-size: 3rem;
+    margin-bottom: 0.2rem;
+    }
     </style>
 
     <h1 class='custom-header'><span class="rotated-emoji">🎧</span> PeePit</h1>
