@@ -187,11 +187,11 @@ def main():
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        text-align: center;
     }
 
     .custom-header {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        text-align: center;
         font-weight: 600;
         font-size: 6rem;
         margin: 0.5rem 0;
@@ -200,6 +200,7 @@ def main():
 
     .custom-subtitle {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        text-align: center;
         font-weight: 500;
         font-size: 1rem;
         margin-bottom: 2rem;
@@ -208,18 +209,9 @@ def main():
 
     .emoji-top {
         font-size: 8rem;
+        text-align: center;
         transform: rotate(180deg);
         margin-bottom: 0.2rem;
-    }
-
-    .centered-inputs {
-        width: 100%;
-        max-width: 400px;
-        margin-top: 2rem;
-    }
-
-    .stTextInput > div > input {
-        text-align: center;
     }
 
     /* Theme-aware colors */
@@ -235,6 +227,7 @@ def main():
         }
     }
 
+    /* Center uploader */
     section[data-testid="stFileUploader"] > div {
         display: flex;
         justify-content: center;
@@ -270,12 +263,11 @@ def main():
         <div class='emoji-top'>🎧</div>
         <h1 class='custom-header'>PeePit</h1>
         <div class='custom-subtitle'>Turns your PDF to MP3 🎧</div>
-
-        <div class="centered-inputs">
-            <input type="text" placeholder="Or enter a PDF URL" class="stTextInput"/>
-        </div>
     </div>
     """, unsafe_allow_html=True)
+
+    # Keep inputs visible without pushing layout height
+    st.text_input("Or enter a PDF URL")
 
     # Now place Streamlit inputs under it
     with st.container():
