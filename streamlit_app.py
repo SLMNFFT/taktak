@@ -179,16 +179,26 @@ def main():
         margin-top: 5rem;
         margin-bottom: 1rem;
         font-size: 4rem;
+        color: white;
     }
-     .custom-subtitle {
-         color: white;
-         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-         text-align: center;
-         font-weight: 500;
-         font-size: 0.8rem;
-         margin-top: 0rem;
-         margin-bottom: 2rem;
-     }
+
+    .custom-subtitle {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        text-align: center;
+        font-weight: 500;
+        font-size: 0.8rem;
+        margin-top: 0rem;
+        margin-bottom: 2rem;
+        color: white;
+    }
+
+    .emoji-top {
+        font-size: 3rem;
+        display: block;
+        text-align: center;
+        transform: rotate(180deg);
+        margin-bottom: 0.2rem;
+    }
 
     /* Theme-aware colors */
     @media (prefers-color-scheme: dark) {
@@ -196,9 +206,10 @@ def main():
             color: yellow !important;
         }
     }
+
     @media (prefers-color-scheme: light) {
         .custom-header, .custom-subtitle {
-            color: amber !important;
+            color: black !important;
         }
     }
 
@@ -206,9 +217,11 @@ def main():
         display: flex;
         justify-content: center;
     }
+
     section[data-testid="stFileUploader"] label span {
         display: none;
     }
+
     section[data-testid="stFileUploader"] label {
         background: #2ecc71 !important;
         color: white !important;
@@ -225,24 +238,19 @@ def main():
         max-width: 400px !important;
         width: 100% !important;
     }
+
     section[data-testid="stFileUploader"] label:hover {
         background: #27ae60 !important;
     }
-    .rotated-emoji {
-    display: inline-block;
-    transform: rotate(180deg);
-    }
-    .emoji-top {
-    font-size: 3rem;
-    margin-bottom: 0.2rem;
-    }
     </style>
 
-    <h1 class='custom-header'><span class="rotated-emoji">🎧</span> PeePit</h1>
+    <div class='emoji-top'>🎧</div>
+    <h1 class='custom-header'>PeePit</h1>
     <div class='custom-subtitle'>Turns your PDF to MP3 🎧</div>
     """, unsafe_allow_html=True)
 
     pdf_url = st.text_input("Or enter a PDF URL")
+
 
     uploaded_file = st.file_uploader(
         label="🎧 peep my file",
