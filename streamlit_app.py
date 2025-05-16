@@ -17,16 +17,15 @@ st.set_page_config(
     page_icon="🎧",
 )
 
+# --- CUSTOM CSS ---
 st.markdown("""
 <style>
-/* Styling for the Streamlit page */
 [data-testid="stColumns"] {
     display: flex;
     align-items: stretch;
     gap: 2rem;
     justify-content: center;
 }
-
 body, pre {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: #ddd;
@@ -34,25 +33,20 @@ body, pre {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
     margin: 0;
 }
-
 .main-container {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     padding: 20px;
-    height: 100%;
     width: 100%;
     text-align: center;
 }
-
 .st-expanderHeader {
     background-color: #2ecc71 !important;
 }
-
 .preview-card {
     background: #1A1B2F;
     border-radius: 15px;
@@ -62,27 +56,16 @@ body, pre {
     flex-direction: column;
     box-shadow: 0 4px 15px rgba(10, 10, 30, 0.5);
 }
-
-.scroll-container {
-    flex: 1;
-    overflow-y: auto;
-    padding-right: 0.5rem;
-    scrollbar-width: thin;
-    scrollbar-color: #4e5aee #1A1B2F;
-}
-
 .preview-image-container {
     display: grid;
     gap: 1rem;
 }
-
 .preview-image {
     background: #2B2D42;
     border-radius: 8px;
     padding: 0.5rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
-
 .preview-image img {
     border-radius: 6px;
     margin-bottom: 0.5rem;
@@ -91,9 +74,37 @@ body, pre {
     object-fit: contain;
     user-select: none;
 }
+/* Custom file uploader */
+.center-bottom-upload {
+    display: flex;
+    justify-content: center;
+    margin-top: 4rem;
+    margin-bottom: 2rem;
+}
+#big-upload-label {
+    background: #2ecc71;
+    color: white;
+    padding: 1.5rem 2rem;
+    border-radius: 12px;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    font-weight: 600;
+    font-size: 1.8rem;
+    cursor: pointer;
+    user-select: none;
+    width: 100%;
+    max-width: 400px;
+    transition: background-color 0.3s ease;
+}
+#big-upload-label:hover {
+    background: #27ae60;
+}
+input[type="file"] {
+    display: none;
+}
 </style>
 """, unsafe_allow_html=True)
-
 
 # --- HELPER FUNCTIONS ---
 
@@ -118,9 +129,6 @@ def extract_text_from_pdf(pdf_path, selected_pages):
     extracted_text = ""
     pages_without_text = []
 
-    if not selected_pages:
-        return "", []
-
     for i in selected_pages:
         if i < 1 or i > len(reader.pages):
             continue
@@ -139,7 +147,6 @@ def extract_text_from_pdf(pdf_path, selected_pages):
 
     return extracted_text.strip(), valid_ocr_pages
 
-
 def generate_audio(text, lang="en", rate=1.0, gender="male"):
     tts = gTTS(text=text, lang=lang, slow=False)
     temp_audio_path = tempfile.mktemp(suffix=".mp3")
@@ -148,24 +155,18 @@ def generate_audio(text, lang="en", rate=1.0, gender="male"):
 
 def save_images_as_pdf(images):
     pdf = FPDF()
-    
     for img in images:
         bio = io.BytesIO()
         img.save(bio, format="PNG")
         bio.seek(0)
-
         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_img_file:
             temp_img_file.write(bio.read())
             temp_img_file_path = temp_img_file.name
-        
         pdf.add_page()
         pdf.image(temp_img_file_path, x=10, y=10, w=pdf.w - 20)
-
     pdf_path = "/tmp/preview_images.pdf"
     pdf.output(pdf_path)
-    
     return pdf_path
-
 
 # --- MAIN APP ---
 
@@ -185,48 +186,10 @@ def main():
 
     pdf_url = st.text_input("Or enter a PDF URL")
 
-    # Hide the default file uploader on top by not calling it or hiding label
-    # Instead, put a hidden uploader at bottom and trigger it with your own button
-
-    # Hidden uploader with no label (must be in the app so Streamlit gets file)
     uploaded_file = st.file_uploader("", type=["pdf"], label_visibility="hidden", key="hidden_uploader")
 
-    # Big green upload button at bottom triggers the hidden input
+    # Upload button trigger
     st.markdown("""
-<style>
-.center-bottom-upload {
-    display: flex;
-    justify-content: center;
-    margin-top: 4rem;
-    margin-bottom: 2rem;
-}
-
-#big-upload-label {
-    background: #2ecc71;
-    color: white;
-    padding: 1.5rem 2rem;
-    border-radius: 12px;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    text-align: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    font-weight: 600;
-    font-size: 1.8rem;
-    cursor: pointer;
-    user-select: none;
-    width: 100%;
-    max-width: 400px;
-    transition: background-color 0.3s ease;
-}
-
-#big-upload-label:hover {
-    background: #27ae60;
-}
-
-input[type="file"] {
-    display: none;
-}
-</style>
-
 <div class="center-bottom-upload">
     <label for="hidden-uploader" id="big-upload-label" role="button" tabindex="0">
         🎧 peep my file
@@ -248,7 +211,6 @@ document.getElementById('hidden-uploader').addEventListener('change', function()
 </script>
 """, unsafe_allow_html=True)
 
-    # Now handle the uploaded file normally
     pdf_path = None
     if uploaded_file:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
@@ -272,7 +234,6 @@ document.getElementById('hidden-uploader').addEventListener('change', function()
 
             col_left, col_right = st.columns(2)
 
-            # --- LEFT COLUMN: TEXT + AUDIO ---
             with col_left:
                 with st.expander("📜 Extracted Text", expanded=True):
                     search_term = st.text_input("🔎 Search within text", "")
@@ -297,7 +258,6 @@ document.getElementById('hidden-uploader').addEventListener('change', function()
 
                     st.markdown(filtered_text.replace("\n", "<br>").replace("  ", " "), unsafe_allow_html=True)
 
-            # --- RIGHT COLUMN: AUDIO ---
             with col_right:
                 with st.expander("🔊 Audio Playback", expanded=True):
                     lang = st.radio("Select language", ("en", "es", "fr", "de"))
@@ -309,19 +269,17 @@ document.getElementById('hidden-uploader').addEventListener('change', function()
                     audio_bytes = audio_file.read()
                     st.audio(audio_bytes, format="audio/mp3")
 
-            # --- IMAGE EXPORT (Temporary Images) ---
-            # Create dummy images as examples
+            # Dummy images for export
             image1 = Image.new("RGB", (300, 300), color="blue")
             image2 = Image.new("RGB", (300, 300), color="green")
-            
+
             st.download_button(
-                "📥 Export PDF", 
-                save_images_as_pdf([image1, image2]), 
-                "exported_images.pdf", 
-                "application/pdf", 
+                "📥 Export PDF",
+                save_images_as_pdf([image1, image2]),
+                "exported_images.pdf",
+                "application/pdf",
                 key="export_pdf"
             )
-
 
 if __name__ == "__main__":
     main()
