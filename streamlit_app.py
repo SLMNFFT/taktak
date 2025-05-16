@@ -1,4 +1,3 @@
-
 import streamlit as st
 import re
 import tempfile
@@ -172,106 +171,90 @@ def save_images_as_pdf(images):
 
 def main():
     st.markdown("""
-    <h1 style='
-        color: white;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        text-align: center;
-        font-weight: 600;
-        margin-top: 2rem;
-        margin-bottom: 2rem;
-    '>
-    🎧 PeePit
-    </h1>
-    """, unsafe_allow_html=True)
+<h1 style='
+    color: white;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+    font-weight: 600;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+'>
+🎧 PeePit
+</h1>
+""", unsafe_allow_html=True)
 
     pdf_url = st.text_input("Or enter a PDF URL")
 
-    # --- Use the normal file uploader but hide label ---
-    uploaded_file = st.file_uploader(
-        "Upload your PDF file", 
-        type=["pdf"], 
-        label_visibility="collapsed",  # hides label but keeps uploader visible
-        key="file_uploader"
-    )
+    # Hide the default file uploader on top by not calling it or hiding label
+    # Instead, put a hidden uploader at bottom and trigger it with your own button
 
-    # --- Custom styled button that triggers the native uploader ---
+    # Hidden uploader with no label (must be in the app so Streamlit gets file)
+    uploaded_file = st.file_uploader("", type=["pdf"], label_visibility="hidden", key="hidden_uploader")
+
+    # Big green upload button at bottom triggers the hidden input
     st.markdown("""
-    <style>
-    div[data-testid="stFileUploader"] > label {
-        display: none; /* hide default label */
+<style>
+.center-bottom-upload {
+    display: flex;
+    justify-content: center;
+    margin-top: 4rem;
+    margin-bottom: 2rem;
+}
+
+#big-upload-label {
+    background: #2ecc71;
+    color: white;
+    padding: 1.5rem 2rem;
+    border-radius: 12px;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    font-weight: 600;
+    font-size: 1.8rem;
+    cursor: pointer;
+    user-select: none;
+    width: 100%;
+    max-width: 400px;
+    transition: background-color 0.3s ease;
+}
+
+#big-upload-label:hover {
+    background: #27ae60;
+}
+
+input[type="file"] {
+    display: none;
+}
+</style>
+
+<div class="center-bottom-upload">
+    <label for="hidden-uploader" id="big-upload-label" role="button" tabindex="0">
+        🎧 peep my file
+    </label>
+    <input type="file" id="hidden-uploader" accept=".pdf" />
+</div>
+
+<script>
+document.getElementById('hidden-uploader').addEventListener('change', function() {
+    const fileInput = this;
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(fileInput.files[0]);
+    const hiddenUploader = window.parent.document.querySelector('input[data-testid="stFileUploader"]');
+    if (hiddenUploader) {
+        hiddenUploader.files = dataTransfer.files;
+        hiddenUploader.dispatchEvent(new Event('change'));
     }
-    .big-upload-button {
-        background: #2ecc71;
-        color: white;
-        padding: 1.5rem 2rem;
-        border-radius: 12px;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        font-weight: 600;
-        font-size: 1.8rem;
-        cursor: pointer;
-        user-select: none;
-        max-width: 400px;
-        margin: 3rem auto 2rem auto;
-        display: block;
-    }
-    .big-upload-button:hover {
-        background: #27ae60;
-    }
-    </style>
-    """ , unsafe_allow_html=True)
+});
+</script>
+""", unsafe_allow_html=True)
 
-    # Put a label for the file input to make it look like a big button
-    # The 'for' attribute must match the file uploader's input id (Streamlit generates it dynamically)
-    # So instead, wrap the uploader inside a container and style it
-
-    # Trick: Use Streamlit's built-in uploader and style it by hiding its label and making the clickable area big.
-
-    # Note: Streamlit file uploader's clickable area is the label+input, so hiding the label and styling the container makes it big and nice.
-
-    # If you want a really big button, you can place the uploader inside a div and style that div:
-
-    st.markdown("""
-    <style>
-    .file-uploader > label > div {
-        min-height: 60px !important;
-        font-size: 1.8rem !important;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: #2ecc71 !important;
-        border-radius: 12px !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-        color: white !important;
-        font-weight: 600 !important;
-        cursor: pointer !important;
-        user-select: none !important;
-        max-width: 400px;
-        margin: 3rem auto 2rem auto;
-    }
-    .file-uploader > label > div:hover {
-        background: #27ae60 !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-    st.markdown('<div class="file-uploader">', unsafe_allow_html=True)
-    # Place the file uploader again, but keep key same to reuse state
-    uploaded_file = st.file_uploader(
-        "", 
-        type=["pdf"], 
-        key="file_uploader"
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
-
+    # Now handle the uploaded file normally
     pdf_path = None
     if uploaded_file:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             tmp.write(uploaded_file.read())
             pdf_path = tmp.name
 
-    # Rest of your code unchanged
     if pdf_path:
         reader = PdfReader(pdf_path)
         total_pages = len(reader.pages)
@@ -289,6 +272,7 @@ def main():
 
             col_left, col_right = st.columns(2)
 
+            # --- LEFT COLUMN: TEXT + AUDIO ---
             with col_left:
                 with st.expander("📜 Extracted Text", expanded=True):
                     search_term = st.text_input("🔎 Search within text", "")
@@ -313,6 +297,7 @@ def main():
 
                     st.markdown(filtered_text.replace("\n", "<br>").replace("  ", " "), unsafe_allow_html=True)
 
+            # --- RIGHT COLUMN: AUDIO ---
             with col_right:
                 with st.expander("🔊 Audio Playback", expanded=True):
                     lang = st.radio("Select language", ("en", "es", "fr", "de"))
