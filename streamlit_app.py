@@ -190,10 +190,19 @@ def main():
         margin-top: 0.5rem;
         margin-bottom: 2rem;
     }
+
+    /* Center uploader */
     section[data-testid="stFileUploader"] > div {
         display: flex;
         justify-content: center;
     }
+
+    /* Hide the default uploader label */
+    section[data-testid="stFileUploader"] label span {
+        display: none;
+    }
+
+    /* Style the upload button */
     section[data-testid="stFileUploader"] label {
         background: #2ecc71;
         color: white;
@@ -210,6 +219,7 @@ def main():
         max-width: 400px;
         width: 100%;
     }
+
     section[data-testid="stFileUploader"] label:hover {
         background: #27ae60;
     }
@@ -222,15 +232,14 @@ def main():
     # Optional: PDF from URL
     pdf_url = st.text_input("Or enter a PDF URL")
 
-    # Actual file uploader (styleable)
+    # File uploader with custom button styling
     uploaded_file = st.file_uploader(
-        label="🎧 peep my file",
+        label="🎧 peep my file",  # This is still required internally
         type=["pdf"],
-        label_visibility="visible",  # IMPORTANT: Must be visible for styling to work
+        label_visibility="visible",  # Must be visible for styling to work
         key="file_uploader"
     )
 
-    # Optional: Show filename
     if uploaded_file:
         st.success(f"Uploaded: {uploaded_file.name}")
 
