@@ -169,17 +169,62 @@ def save_images_as_pdf(images):
 # --- MAIN APP ---
 
 def main():
-    st.markdown("""
-<h1 style='
+# Hidden uploader with no label (must be in the app so Streamlit gets file)
+uploaded_file = st.file_uploader("", type=["pdf"], label_visibility="hidden", key="hidden_uploader")
+
+# Big green upload button triggers the hidden input immediately on click
+st.markdown("""
+<style>
+.center-bottom-upload {
+    display: flex;
+    justify-content: center;  /* center horizontally */
+    align-items: center;      /* center vertically */
+    height: 100vh;            /* full viewport height */
+    margin: 0;                /* no margin */
+}
+
+#big-upload-label {
+    background: #2ecc71;
     color: white;
+    padding: 1.5rem 2rem;
+    border-radius: 12px;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     font-weight: 600;
-    margin-top: 2rem;
-    margin-bottom: 2rem;
-'>
-🎧 PeePit
-</h1>
+    font-size: 1.8rem;
+    cursor: pointer;
+    user-select: none;
+    width: 100%;
+    max-width: 400px;
+    transition: background-color 0.3s ease;
+}
+
+#big-upload-label:hover {
+    background: #27ae60;
+}
+
+input[type="file"] {
+    display: none;
+}
+</style>
+
+<div class="center-bottom-upload">
+    <button id="big-upload-label" type="button" role="button" tabindex="0">
+        🎧 peep my file
+    </button>
+</div>
+
+<script>
+const btn = document.getElementById('big-upload-label');
+const hiddenUploader = window.parent.document.querySelector('input[data-testid="stFileUploader"]');
+
+btn.addEventListener('click', () => {
+    if(hiddenUploader){
+        hiddenUploader.click();
+    }
+});
+</script>
 """, unsafe_allow_html=True)
 
     pdf_url = st.text_input("Or enter a PDF URL")
