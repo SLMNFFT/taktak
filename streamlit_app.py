@@ -190,16 +190,11 @@ def main():
         margin-top: 0.5rem;
         margin-bottom: 2rem;
     }
-    .upload-button-wrapper {
+    section[data-testid="stFileUploader"] > div {
         display: flex;
         justify-content: center;
-        margin-top: 4rem;
-        margin-bottom: 2rem;
     }
-    input[type="file"] {
-        display: none;
-    }
-    .custom-upload-label {
+    section[data-testid="stFileUploader"] label {
         background: #2ecc71;
         color: white;
         padding: 1.5rem 2rem;
@@ -211,12 +206,11 @@ def main():
         font-size: 1.8rem;
         cursor: pointer;
         user-select: none;
-        width: 100%;
-        max-width: 400px;
         transition: background-color 0.3s ease;
-        display: inline-block;
+        max-width: 400px;
+        width: 100%;
     }
-    .custom-upload-label:hover {
+    section[data-testid="stFileUploader"] label:hover {
         background: #27ae60;
     }
     </style>
@@ -228,22 +222,15 @@ def main():
     # Optional: PDF from URL
     pdf_url = st.text_input("Or enter a PDF URL")
 
-    # Streamlit file uploader (functional but hidden label)
+    # Actual file uploader (styleable)
     uploaded_file = st.file_uploader(
         label="🎧 peep my file",
         type=["pdf"],
-        label_visibility="collapsed",
-        key="custom_uploader"
+        label_visibility="visible",  # IMPORTANT: Must be visible for styling to work
+        key="file_uploader"
     )
 
-    # Styled uploader button linked to Streamlit's uploader
-    st.markdown("""
-    <div class="upload-button-wrapper">
-        <label for="custom_uploader" class="custom-upload-label">🎧 peep my file</label>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # If file uploaded, show filename
+    # Optional: Show filename
     if uploaded_file:
         st.success(f"Uploaded: {uploaded_file.name}")
 
