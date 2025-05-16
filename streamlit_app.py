@@ -173,7 +173,6 @@ def main():
     st.markdown("""
     <style>
     .custom-header {
-        color: white;
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         text-align: center;
         font-weight: 600;
@@ -182,7 +181,6 @@ def main():
         font-size: 4rem;
     }
     .custom-subtitle {
-        color: white;
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         text-align: center;
         font-weight: 500;
@@ -191,18 +189,25 @@ def main():
         margin-bottom: 2rem;
     }
 
-    /* Center uploader container */
+    /* Theme-aware colors */
+    @media (prefers-color-scheme: dark) {
+        .custom-header, .custom-subtitle {
+            color: white !important;
+        }
+    }
+    @media (prefers-color-scheme: light) {
+        .custom-header, .custom-subtitle {
+            color: black !important;
+        }
+    }
+
     section[data-testid="stFileUploader"] > div {
         display: flex;
         justify-content: center;
     }
-
-    /* Hide the default label text */
     section[data-testid="stFileUploader"] label span {
         display: none;
     }
-
-    /* Style the actual uploader button */
     section[data-testid="stFileUploader"] label {
         background: #2ecc71 !important;
         color: white !important;
@@ -219,7 +224,6 @@ def main():
         max-width: 400px !important;
         width: 100% !important;
     }
-
     section[data-testid="stFileUploader"] label:hover {
         background: #27ae60 !important;
     }
@@ -229,18 +233,15 @@ def main():
     <div class='custom-subtitle'>Turns your PDF to MP3 🎧</div>
     """, unsafe_allow_html=True)
 
-    # Optional: PDF from URL
     pdf_url = st.text_input("Or enter a PDF URL")
 
-    # File uploader with visible label (needed to style properly)
     uploaded_file = st.file_uploader(
-        label="🎧 peep my file",  # Required internally
+        label="🎧 peep my file",
         type=["pdf"],
-        label_visibility="visible",  # Keep visible so button renders
+        label_visibility="visible",
         key="custom_uploader"
     )
 
-    # Display uploaded file name
     if uploaded_file:
         st.success(f"Uploaded: {uploaded_file.name}")
 
