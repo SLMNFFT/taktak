@@ -192,7 +192,7 @@ def main():
     /* Theme-aware colors */
     @media (prefers-color-scheme: dark) {
         .custom-header, .custom-subtitle {
-            color: white !important;
+            color: yellow !important;
         }
     }
     @media (prefers-color-scheme: light) {
