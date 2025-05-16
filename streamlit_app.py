@@ -198,7 +198,7 @@ def main():
     }
     @media (prefers-color-scheme: light) {
         .custom-header, .custom-subtitle {
-            color: black !important;
+            color: amber !important;
         }
     }
 
