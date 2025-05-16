@@ -184,16 +184,23 @@ def main():
 '>
 🎧 PeePit
 </h1>
+
+<div style="display: flex; flex-direction: column; align-items: center; margin-top: 2rem;">
 """, unsafe_allow_html=True)
 
-    pdf_file = st.file_uploader("Turn your PDF to a MP3 file. (PDF images and image PDFs are not supported)", type=["pdf"])
-    pdf_url = st.text_input("Or enter a PDF URL")
+    pdf_file = st.file_uploader("Turn your PDF to a MP3 file. (PDF images and image PDFs are not supported)", type=["pdf"], label_visibility="visible")
+    pdf_url = st.text_input("Or enter a PDF URL", placeholder="https://example.com/sample.pdf")
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
     pdf_path = None
     if pdf_file:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             tmp.write(pdf_file.read())
             pdf_path = tmp.name
+
+    # ... rest unchanged ...
+
 
     if pdf_path:
         reader = PdfReader(pdf_path)
