@@ -171,93 +171,81 @@ def save_images_as_pdf(images):
 
 def main():
     st.markdown("""
-<h1 style='
-    color: white;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    text-align: center;
-    font-weight: 600;
-    margin-top: 2rem;
-    margin-bottom: 2rem;
-'>
-🎧 PeePit.
-</h1>
-<h1 style='
-    color: white;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    text-align: center;
-    font-weight: 600;
-    margin-top: 2rem;
-    margin-bottom: 2rem;
-    font-size: 1.0rem;
-'>
-Turns your pdf to mp3 🎧 
-</h1>
-""", unsafe_allow_html=True)
+    <style>
+    .custom-header {
+        color: white;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        text-align: center;
+        font-weight: 600;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        font-size: 2rem;
+    }
+    .custom-subtitle {
+        color: white;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        text-align: center;
+        font-weight: 500;
+        font-size: 1.2rem;
+        margin-top: 0.5rem;
+        margin-bottom: 2rem;
+    }
+    .upload-button-wrapper {
+        display: flex;
+        justify-content: center;
+        margin-top: 4rem;
+        margin-bottom: 2rem;
+    }
+    input[type="file"] {
+        display: none;
+    }
+    .custom-upload-label {
+        background: #2ecc71;
+        color: white;
+        padding: 1.5rem 2rem;
+        border-radius: 12px;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        font-weight: 600;
+        font-size: 1.8rem;
+        cursor: pointer;
+        user-select: none;
+        width: 100%;
+        max-width: 400px;
+        transition: background-color 0.3s ease;
+        display: inline-block;
+    }
+    .custom-upload-label:hover {
+        background: #27ae60;
+    }
+    </style>
 
+    <h1 class='custom-header'>🎧 PeePit</h1>
+    <div class='custom-subtitle'>Turns your PDF to MP3 🎧</div>
+    """, unsafe_allow_html=True)
+
+    # Optional: PDF from URL
     pdf_url = st.text_input("Or enter a PDF URL")
 
-    # Hide the default file uploader on top by not calling it or hiding label
-    # Instead, put a hidden uploader at bottom and trigger it with your own button
+    # Streamlit file uploader (functional but hidden label)
+    uploaded_file = st.file_uploader(
+        label="🎧 peep my file",
+        type=["pdf"],
+        label_visibility="collapsed",
+        key="custom_uploader"
+    )
 
-    # Hidden uploader with no label (must be in the app so Streamlit gets file)
-    uploaded_file = st.file_uploader("", type=["pdf"], label_visibility="hidden", key="hidden_uploader")
-
-    # Big green upload button at bottom triggers the hidden input
+    # Styled uploader button linked to Streamlit's uploader
     st.markdown("""
-<style>
-.center-bottom-upload {
-    display: flex;
-    justify-content: center;
-    margin-top: 4rem;
-    margin-bottom: 2rem;
-}
+    <div class="upload-button-wrapper">
+        <label for="custom_uploader" class="custom-upload-label">🎧 peep my file</label>
+    </div>
+    """, unsafe_allow_html=True)
 
-#big-upload-label {
-    background: #2ecc71;
-    color: white;
-    padding: 1.5rem 2rem;
-    border-radius: 12px;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    text-align: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    font-weight: 600;
-    font-size: 1.8rem;
-    cursor: pointer;
-    user-select: none;
-    width: 100%;
-    max-width: 400px;
-    transition: background-color 0.3s ease;
-}
-
-#big-upload-label:hover {
-    background: #27ae60;
-}
-
-input[type="file"] {
-    display: none;
-}
-</style>
-
-<div class="center-bottom-upload">
-    <label for="hidden-uploader" id="big-upload-label" role="button" tabindex="0">
-        🎧 peep my file
-    </label>
-    <input type="file" id="hidden-uploader" accept=".pdf" />
-</div>
-
-<script>
-document.getElementById('hidden-uploader').addEventListener('change', function() {
-    const fileInput = this;
-    const dataTransfer = new DataTransfer();
-    dataTransfer.items.add(fileInput.files[0]);
-    const hiddenUploader = window.parent.document.querySelector('input[data-testid="stFileUploader"]');
-    if (hiddenUploader) {
-        hiddenUploader.files = dataTransfer.files;
-        hiddenUploader.dispatchEvent(new Event('change'));
-    }
-});
-</script>
-""", unsafe_allow_html=True)
+    # If file uploaded, show filename
+    if uploaded_file:
+        st.success(f"Uploaded: {uploaded_file.name}")
 
     # Now handle the uploaded file normally
     pdf_path = None
