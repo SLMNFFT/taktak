@@ -181,6 +181,16 @@ def main():
 '>
 🎧 PeePit
 </h1>
+<h1 style='
+    color: white;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+    font-weight: 600;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+'>
+turn yout pdf to mp3🎧 
+</h1>
 """, unsafe_allow_html=True)
 
     pdf_url = st.text_input("Or enter a PDF URL")
