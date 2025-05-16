@@ -173,50 +173,27 @@ import streamlit as st
 def main():
     st.markdown("""
     <style>
-    html, body, [data-testid="stAppViewContainer"] {
-        height: 100vh;
-        overflow: hidden;
-    }
-
-    .block-container {
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-    }
-
-    .container {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        height: 100vh;
-        text-align: center;
-    }
-
     .custom-header {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        text-align: center;
         font-weight: 600;
+        margin-top: 5rem;
+        margin-bottom: 1rem;
         font-size: 4rem;
-        margin: 0.5rem 0;
-        color: white;
     }
-
     .custom-subtitle {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        text-align: center;
         font-weight: 500;
-        font-size: 1rem;
-        margin-bottom: 1rem;
-        color: white;
-    }
-
-    .emoji-top {
-        font-size: 4rem;
-        transform: rotate(180deg);
-        margin-bottom: 0.3rem;
+        font-size: 0.8rem;
+        margin-top: 0rem;
+        margin-bottom: 2rem;
     }
 
     /* Theme-aware colors */
     @media (prefers-color-scheme: dark) {
         .custom-header, .custom-subtitle {
-            color: yellow !important;
+            color: white !important;
         }
     }
     @media (prefers-color-scheme: light) {
@@ -225,16 +202,13 @@ def main():
         }
     }
 
-    /* Center uploader */
     section[data-testid="stFileUploader"] > div {
         display: flex;
         justify-content: center;
     }
-
     section[data-testid="stFileUploader"] label span {
         display: none;
     }
-
     section[data-testid="stFileUploader"] label {
         background: #2ecc71 !important;
         color: white !important;
@@ -251,21 +225,17 @@ def main():
         max-width: 400px !important;
         width: 100% !important;
     }
-
     section[data-testid="stFileUploader"] label:hover {
         background: #27ae60 !important;
     }
     </style>
 
-    <div class="container">
-        <div class="emoji-top">🎧</div>
-        <h1 class="custom-header">PeePit</h1>
-        <div class="custom-subtitle">Turns your PDF to MP3 🎧</div>
-    </div>
+    <h1 class='custom-header'>🎧 PeePit</h1>
+    <div class='custom-subtitle'>Turns your PDF to MP3 🎧</div>
     """, unsafe_allow_html=True)
 
-    # Text input and uploader positioned below the header
-    st.text_input("Or enter a PDF URL")
+    pdf_url = st.text_input("Or enter a PDF URL")
+
     uploaded_file = st.file_uploader(
         label="🎧 peep my file",
         type=["pdf"],
@@ -275,6 +245,7 @@ def main():
 
     if uploaded_file:
         st.success(f"Uploaded: {uploaded_file.name}")
+
 
 
     # Now handle the uploaded file normally
