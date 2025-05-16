@@ -230,7 +230,6 @@ input[type="file"] {
 <div class="center-bottom-upload">
     <label for="hidden-uploader" id="big-upload-label" role="button" tabindex="0">
         🎧 peep my file
-        turn you pdf to pm3
     </label>
     <input type="file" id="hidden-uploader" accept=".pdf" />
 </div>
