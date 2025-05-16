@@ -176,7 +176,7 @@ def main():
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         text-align: center;
         font-weight: 600;
-        margin-top: 3rem;
+        margin-top: 1rem;
         margin-bottom: 3rem;
         font-size: 6rem;
         color: white;
