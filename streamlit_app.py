@@ -1,12 +1,16 @@
+
 import streamlit as st
 import re
 import tempfile
 import base64
+import pdfplumber
 from pypdf import PdfReader
 from PIL import Image
 from fpdf import FPDF
-from gtts import gTTS
+import pyttsx3
 import io
+from gtts import gTTS
+import os
 
 st.set_page_config(
     page_title="Peepit Audiobook",
@@ -88,33 +92,16 @@ body, pre {
     object-fit: contain;
     user-select: none;
 }
-
-/* Styled file uploader button */
-div.stFileUploader > label > div {
-    background-color: #2ecc71 !important;
-    color: white !important;
-    padding: 1.5rem 2rem !important;
-    border-radius: 12px !important;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif !important;
-    font-weight: 600 !important;
-    font-size: 1.8rem !important;
-    text-align: center !important;
-    cursor: pointer !important;
-    user-select: none !important;
-    max-width: 400px !important;
-    margin: 4rem auto 2rem auto !important;
-    display: block !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-    transition: background-color 0.3s ease !important;
-}
-div.stFileUploader > label > div:hover {
-    background-color: #27ae60 !important;
-}
 </style>
 """, unsafe_allow_html=True)
 
 
 # --- HELPER FUNCTIONS ---
+
+def pil_to_base64(img):
+    buffered = io.BytesIO()
+    img.save(buffered, format="PNG")
+    return base64.b64encode(buffered.getvalue()).decode()
 
 def extract_text_with_ocr(pdf_path, pages):
     from pdf2image import convert_from_path
@@ -199,9 +186,70 @@ def main():
 
     pdf_url = st.text_input("Or enter a PDF URL")
 
-    # Native Streamlit file uploader styled as big green button
-    uploaded_file = st.file_uploader("", type=["pdf"], label_visibility="hidden")
+    # Hide the default file uploader on top by not calling it or hiding label
+    # Instead, put a hidden uploader at bottom and trigger it with your own button
 
+    # Hidden uploader with no label (must be in the app so Streamlit gets file)
+    uploaded_file = st.file_uploader("", type=["pdf"], label_visibility="hidden", key="hidden_uploader")
+
+    # Big green upload button at bottom triggers the hidden input
+    st.markdown("""
+<style>
+.center-bottom-upload {
+    display: flex;
+    justify-content: center;
+    margin-top: 4rem;
+    margin-bottom: 2rem;
+}
+
+#big-upload-label {
+    background: #2ecc71;
+    color: white;
+    padding: 1.5rem 2rem;
+    border-radius: 12px;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    font-weight: 600;
+    font-size: 1.8rem;
+    cursor: pointer;
+    user-select: none;
+    width: 100%;
+    max-width: 400px;
+    transition: background-color 0.3s ease;
+}
+
+#big-upload-label:hover {
+    background: #27ae60;
+}
+
+input[type="file"] {
+    display: none;
+}
+</style>
+
+<div class="center-bottom-upload">
+    <label for="hidden-uploader" id="big-upload-label" role="button" tabindex="0">
+        🎧 peep my file
+    </label>
+    <input type="file" id="hidden-uploader" accept=".pdf" />
+</div>
+
+<script>
+document.getElementById('hidden-uploader').addEventListener('change', function() {
+    const fileInput = this;
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(fileInput.files[0]);
+    const hiddenUploader = window.parent.document.querySelector('input[data-testid="stFileUploader"]');
+    if (hiddenUploader) {
+        hiddenUploader.files = dataTransfer.files;
+        hiddenUploader.dispatchEvent(new Event('change'));
+    }
+});
+</script>
+""", unsafe_allow_html=True)
+
+    # Now handle the uploaded file normally
     pdf_path = None
     if uploaded_file:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
@@ -231,17 +279,14 @@ def main():
                     search_term = st.text_input("🔎 Search within text", "")
                     show_ocr = st.checkbox("👁️ Show OCR text", value=True)
 
-                    filtered_text = full_text
                     if not show_ocr and ocr_pages:
-                        # Remove OCR pages text if unchecked
-                        # (simple approach by splitting on page markers)
-                        filtered_text = ""
-                        for page_num in selected_pages:
-                            if page_num not in ocr_pages:
-                                pattern = rf"--- Page {page_num} .*?(?=(--- Page \d+|\Z))"
-                                matches = re.findall(pattern, full_text, re.DOTALL)
-                                for match in matches:
-                                    filtered_text += match + "\n\n"
+                        pattern = r"--- Page (\d+).*?(?=(--- Page |\Z))"
+                        filtered = re.findall(pattern, full_text, re.DOTALL)
+                        filtered_text = "\n\n".join(
+                            section for section, _ in filtered if int(section) not in ocr_pages
+                        )
+                    else:
+                        filtered_text = full_text
 
                     if search_term:
                         filtered_text = re.sub(
