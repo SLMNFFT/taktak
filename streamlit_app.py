@@ -179,7 +179,7 @@ def main():
     margin-top: 2rem;
     margin-bottom: 2rem;
 '>
-🎧 PeePit
+🎧 PeePit.
 </h1>
 <h1 style='
     color: white;
