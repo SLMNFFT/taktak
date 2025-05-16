@@ -191,37 +191,37 @@ def main():
         margin-bottom: 2rem;
     }
 
-    /* Center uploader */
+    /* Center uploader container */
     section[data-testid="stFileUploader"] > div {
         display: flex;
         justify-content: center;
     }
 
-    /* Hide the default uploader label */
+    /* Hide the default label text */
     section[data-testid="stFileUploader"] label span {
         display: none;
     }
 
-    /* Style the upload button */
+    /* Style the actual uploader button */
     section[data-testid="stFileUploader"] label {
-        background: #2ecc71;
-        color: white;
-        padding: 1.5rem 2rem;
-        border-radius: 12px;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: #2ecc71 !important;
+        color: white !important;
+        padding: 1.5rem 2rem !important;
+        border-radius: 12px !important;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif !important;
         text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        font-weight: 600;
-        font-size: 1.8rem;
-        cursor: pointer;
-        user-select: none;
-        transition: background-color 0.3s ease;
-        max-width: 400px;
-        width: 100%;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+        font-weight: 600 !important;
+        font-size: 1.8rem !important;
+        cursor: pointer !important;
+        user-select: none !important;
+        transition: background-color 0.3s ease !important;
+        max-width: 400px !important;
+        width: 100% !important;
     }
 
     section[data-testid="stFileUploader"] label:hover {
-        background: #27ae60;
+        background: #27ae60 !important;
     }
     </style>
 
@@ -232,14 +232,15 @@ def main():
     # Optional: PDF from URL
     pdf_url = st.text_input("Or enter a PDF URL")
 
-    # File uploader with custom button styling
+    # File uploader with visible label (needed to style properly)
     uploaded_file = st.file_uploader(
-        label="🎧 peep my file",  # This is still required internally
+        label="🎧 peep my file",  # Required internally
         type=["pdf"],
-        label_visibility="visible",  # Must be visible for styling to work
-        key="file_uploader"
+        label_visibility="visible",  # Keep visible so button renders
+        key="custom_uploader"
     )
 
+    # Display uploaded file name
     if uploaded_file:
         st.success(f"Uploaded: {uploaded_file.name}")
 
