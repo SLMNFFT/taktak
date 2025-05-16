@@ -227,12 +227,7 @@ input[type="file"] {
 }
 </style>
 
-<div class="center-bottom-upload">
-    <label for="big-pdf-upload" id="big-upload-label" role="button" tabindex="0">
-        🎧 Tap here to Upload your PDF
-    </label>
-    <input type="file" id="big-pdf-upload" accept=".pdf" />
-</div>
+
 """, unsafe_allow_html=True)
 
     # Hidden file uploader to catch file uploads normally
