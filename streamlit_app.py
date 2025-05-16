@@ -234,9 +234,11 @@ def main():
     margin-bottom: 0.3rem;
     }
     </style>
-    <div class="emoji-top">🎧</div>
-    <h1 class='custom-header'>🎧 PeePit</h1>
-    <div class='custom-subtitle'>Turns your PDF to MP3 🎧</div>
+    <div class="container">
+        <div class="emoji-top">🎧</div>
+        <h1 class="custom-header">PeePit</h1>
+        <div class="custom-subtitle">Turns your PDF to MP3 🎧</div>
+    </div>
     """, unsafe_allow_html=True)
 
     pdf_url = st.text_input("Or enter a PDF URL")
