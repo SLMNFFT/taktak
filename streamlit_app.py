@@ -205,7 +205,7 @@ def main():
         text-align: center;
         font-weight: 500;
         font-size: 1rem;
-        margin-bottom: 2rem;
+        margin-bottom: 3rem;
         color: white;
     }
 
@@ -270,11 +270,6 @@ def main():
 
     # Keep inputs visible without pushing layout height
     st.text_input("Or enter a PDF URL")
-    st.file_uploader("🎧 Upload a PDF", type=["pdf"], label_visibility="visible")
-
-
-
-
     uploaded_file = st.file_uploader(
         label="🎧 peep my file",
         type=["pdf"],
