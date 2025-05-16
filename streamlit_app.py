@@ -280,8 +280,6 @@ def main():
     # Now place Streamlit inputs under it
     with st.container():
         st.text_input("Or enter a PDF URL", label_visibility="collapsed")
-        st.file_uploader("🎧 Peep my file", type=["pdf"])
-
     uploaded_file = st.file_uploader(
         label="🎧 peep my file",
         type=["pdf"],
