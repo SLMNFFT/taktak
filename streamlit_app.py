@@ -180,14 +180,15 @@ def main():
         margin-bottom: 1rem;
         font-size: 4rem;
     }
-    .custom-subtitle {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        text-align: center;
-        font-weight: 500;
-        font-size: 0.8rem;
-        margin-top: 0rem;
-        margin-bottom: 2rem;
-    }
+.custom-subtitle {
+    color: white;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+    font-weight: 500;
+    font-size: 0.8rem;
+    margin-top: 0rem;
+    margin-bottom: 2rem;
+}
 
     /* Theme-aware colors */
     @media (prefers-color-scheme: dark) {
