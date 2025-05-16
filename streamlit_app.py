@@ -229,7 +229,7 @@ input[type="file"] {
 
 <div class="center-bottom-upload">
     <label for="hidden-uploader" id="big-upload-label" role="button" tabindex="0">
-        🎧 Tap here to Upload your PDF
+        🎧 peep my file
     </label>
     <input type="file" id="hidden-uploader" accept=".pdf" />
 </div>
@@ -254,15 +254,6 @@ document.getElementById('hidden-uploader').addEventListener('change', function()
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             tmp.write(uploaded_file.read())
             pdf_path = tmp.name
-
-    # Your existing processing logic goes here...
-
-
-    # rest of your main() unchanged...
-
-
-    # ... rest unchanged ...
-
 
     if pdf_path:
         reader = PdfReader(pdf_path)
