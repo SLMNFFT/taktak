@@ -193,8 +193,8 @@ def main():
     }
 
     .emoji-top {
-        font-size: 10rem;
-        display: block;
+        font-size: 8rem;
+        
         text-align: center;
         transform: rotate(180deg);
         margin-bottom: 0rem;
