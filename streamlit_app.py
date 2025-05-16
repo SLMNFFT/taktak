@@ -228,8 +228,13 @@ def main():
     section[data-testid="stFileUploader"] label:hover {
         background: #27ae60 !important;
     }
+    .emoji-top {
+    font-size: 4rem;
+    transform: rotate(180deg);
+    margin-bottom: 0.3rem;
+    }
     </style>
-
+    <div class="emoji-top">🎧</div>
     <h1 class='custom-header'>🎧 PeePit</h1>
     <div class='custom-subtitle'>Turns your PDF to MP3 🎧</div>
     """, unsafe_allow_html=True)
