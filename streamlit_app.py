@@ -179,7 +179,7 @@ def main():
         font-weight: 600;
         margin-top: 5rem;
         margin-bottom: 1rem;
-        font-size: 2rem;
+        font-size: 4rem;
     }
     .custom-subtitle {
         color: white;
@@ -187,7 +187,7 @@ def main():
         text-align: center;
         font-weight: 500;
         font-size: 0.8rem;
-        margin-top: 0 rem;
+        margin-top: 0rem;
         margin-bottom: 2rem;
     }
 
