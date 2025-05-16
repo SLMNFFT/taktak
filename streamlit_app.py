@@ -2,11 +2,14 @@ import streamlit as st
 import re
 import tempfile
 import base64
+import pdfplumber
 from pypdf import PdfReader
 from PIL import Image
 from fpdf import FPDF
-from gtts import gTTS
+import pyttsx3
 import io
+from gtts import gTTS
+import os
 
 st.set_page_config(
     page_title="Peepit Audiobook",
@@ -88,34 +91,27 @@ body, pre {
     object-fit: contain;
     user-select: none;
 }
-
-/* Custom upload button styling */
-.upload-button {
-    background: #2ecc71;
-    color: white;
-    padding: 1.5rem 2rem;
-    border-radius: 12px;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    text-align: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    font-weight: 600;
-    font-size: 1.8rem;
-    cursor: pointer;
-    user-select: none;
-    width: 100%;
-    max-width: 400px;
-    transition: background-color 0.3s ease;
-    margin: 3rem auto 2rem auto;
-    display: block;
-}
-.upload-button:hover {
-    background: #27ae60;
-}
 </style>
 """, unsafe_allow_html=True)
 
 
 # --- HELPER FUNCTIONS ---
+
+def pil_to_base64(img):
+    buffered = io.BytesIO()
+    img.save(buffered, format="PNG")
+    return base64.b64encode(buffered.getvalue()).decode()
+
+def extract_text_with_ocr(pdf_path, pages):
+    from pdf2image import convert_from_path
+    import pytesseract
+    text = ""
+    images = convert_from_path(pdf_path, dpi=300, first_page=min(pages), last_page=max(pages))
+    for i, img in zip(pages, images):
+        text += f"--- Page {i} (OCR) ---\n"
+        text += pytesseract.image_to_string(img)
+        text += "\n\n"
+    return text
 
 def extract_text_from_pdf(pdf_path, selected_pages):
     reader = PdfReader(pdf_path)
@@ -135,9 +131,14 @@ def extract_text_from_pdf(pdf_path, selected_pages):
         else:
             pages_without_text.append(i)
 
-    # You can add OCR here if needed
+    valid_ocr_pages = [p for p in pages_without_text if 1 <= p <= len(reader.pages)]
+    if valid_ocr_pages:
+        st.warning(f"🔍 Running OCR on pages: {valid_ocr_pages}")
+        ocr_text = extract_text_with_ocr(pdf_path, valid_ocr_pages)
+        extracted_text += ocr_text
 
-    return extracted_text.strip(), pages_without_text
+    return extracted_text.strip(), valid_ocr_pages
+
 
 def generate_audio(text, lang="en", rate=1.0, gender="male"):
     tts = gTTS(text=text, lang=lang, slow=False)
@@ -160,7 +161,7 @@ def save_images_as_pdf(images):
         pdf.add_page()
         pdf.image(temp_img_file_path, x=10, y=10, w=pdf.w - 20)
 
-    pdf_path = tempfile.mktemp(suffix=".pdf")
+    pdf_path = "/tmp/preview_images.pdf"
     pdf.output(pdf_path)
     
     return pdf_path
@@ -169,18 +170,35 @@ def save_images_as_pdf(images):
 # --- MAIN APP ---
 
 def main():
-# Hidden uploader with no label (must be in the app so Streamlit gets file)
-uploaded_file = st.file_uploader("", type=["pdf"], label_visibility="hidden", key="hidden_uploader")
+    st.markdown("""
+<h1 style='
+    color: white;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+    font-weight: 600;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+'>
+🎧 PeePit
+</h1>
+""", unsafe_allow_html=True)
 
-# Big green upload button triggers the hidden input immediately on click
-st.markdown("""
+    pdf_url = st.text_input("Or enter a PDF URL")
+
+    # Hide the default file uploader on top by not calling it or hiding label
+    # Instead, put a hidden uploader at bottom and trigger it with your own button
+
+    # Hidden uploader with no label (must be in the app so Streamlit gets file)
+    uploaded_file = st.file_uploader("", type=["pdf"], label_visibility="hidden", key="hidden_uploader")
+
+    # Big green upload button at bottom triggers the hidden input
+    st.markdown("""
 <style>
 .center-bottom-upload {
     display: flex;
-    justify-content: center;  /* center horizontally */
-    align-items: center;      /* center vertically */
-    height: 100vh;            /* full viewport height */
-    margin: 0;                /* no margin */
+    justify-content: center;
+    margin-top: 4rem;
+    margin-bottom: 2rem;
 }
 
 #big-upload-label {
@@ -210,38 +228,27 @@ input[type="file"] {
 </style>
 
 <div class="center-bottom-upload">
-    <button id="big-upload-label" type="button" role="button" tabindex="0">
+    <label for="hidden-uploader" id="big-upload-label" role="button" tabindex="0">
         🎧 peep my file
-    </button>
+    </label>
+    <input type="file" id="hidden-uploader" accept=".pdf" />
 </div>
 
 <script>
-const btn = document.getElementById('big-upload-label');
-const hiddenUploader = window.parent.document.querySelector('input[data-testid="stFileUploader"]');
-
-btn.addEventListener('click', () => {
-    if(hiddenUploader){
-        hiddenUploader.click();
+document.getElementById('hidden-uploader').addEventListener('change', function() {
+    const fileInput = this;
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(fileInput.files[0]);
+    const hiddenUploader = window.parent.document.querySelector('input[data-testid="stFileUploader"]');
+    if (hiddenUploader) {
+        hiddenUploader.files = dataTransfer.files;
+        hiddenUploader.dispatchEvent(new Event('change'));
     }
 });
 </script>
 """, unsafe_allow_html=True)
 
-    pdf_url = st.text_input("Or enter a PDF URL")
-
-    # Option 2: show file uploader only after clicking this button
-    if "upload_clicked" not in st.session_state:
-        st.session_state.upload_clicked = False
-
-    def click_upload():
-        st.session_state.upload_clicked = True
-
-    st.button("🎧 Peep my file", on_click=click_upload, key="upload_button")
-
-    uploaded_file = None
-    if st.session_state.upload_clicked:
-        uploaded_file = st.file_uploader("Upload your PDF file", type=["pdf"])
-
+    # Now handle the uploaded file normally
     pdf_path = None
     if uploaded_file:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
@@ -269,7 +276,17 @@ btn.addEventListener('click', () => {
             with col_left:
                 with st.expander("📜 Extracted Text", expanded=True):
                     search_term = st.text_input("🔎 Search within text", "")
-                    filtered_text = full_text
+                    show_ocr = st.checkbox("👁️ Show OCR text", value=True)
+
+                    if not show_ocr and ocr_pages:
+                        pattern = r"--- Page (\d+).*?(?=(--- Page |\Z))"
+                        filtered = re.findall(pattern, full_text, re.DOTALL)
+                        filtered_text = "\n\n".join(
+                            section for section, _ in filtered if int(section) not in ocr_pages
+                        )
+                    else:
+                        filtered_text = full_text
+
                     if search_term:
                         filtered_text = re.sub(
                             f"(?i)({re.escape(search_term)})",
@@ -277,6 +294,7 @@ btn.addEventListener('click', () => {
                             filtered_text,
                             flags=re.DOTALL,
                         )
+
                     st.markdown(filtered_text.replace("\n", "<br>").replace("  ", " "), unsafe_allow_html=True)
 
             # --- RIGHT COLUMN: AUDIO ---
@@ -287,11 +305,12 @@ btn.addEventListener('click', () => {
                     gender = st.radio("Select voice type", ("male", "female"))
 
                     audio_path = generate_audio(filtered_text, lang=lang, rate=rate, gender=gender)
-                    with open(audio_path, "rb") as audio_file:
-                        audio_bytes = audio_file.read()
+                    audio_file = open(audio_path, "rb")
+                    audio_bytes = audio_file.read()
                     st.audio(audio_bytes, format="audio/mp3")
 
-            # --- IMAGE EXPORT (Dummy Images) ---
+            # --- IMAGE EXPORT (Temporary Images) ---
+            # Create dummy images as examples
             image1 = Image.new("RGB", (300, 300), color="blue")
             image2 = Image.new("RGB", (300, 300), color="green")
             
