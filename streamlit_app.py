@@ -168,17 +168,35 @@ def save_images_as_pdf(images):
 
 
 # --- MAIN APP ---
+import streamlit as st
 
 def main():
     st.markdown("""
     <style>
+    html, body, [data-testid="stAppViewContainer"] {
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    .block-container {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    .fullscreen-container {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
     .custom-header {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         text-align: center;
         font-weight: 600;
-        margin-top: 1rem;
-        margin-bottom: 3rem;
         font-size: 6rem;
+        margin: 0.5rem 0;
         color: white;
     }
 
@@ -186,18 +204,16 @@ def main():
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         text-align: center;
         font-weight: 500;
-        font-size: 0.8rem;
-        margin-top: 0rem;
+        font-size: 1rem;
         margin-bottom: 2rem;
         color: white;
     }
 
     .emoji-top {
         font-size: 8rem;
-        
         text-align: center;
         transform: rotate(180deg);
-        margin-bottom: 0rem;
+        margin-bottom: 0.2rem;
     }
 
     /* Theme-aware colors */
@@ -213,6 +229,7 @@ def main():
         }
     }
 
+    /* Center uploader */
     section[data-testid="stFileUploader"] > div {
         display: flex;
         justify-content: center;
@@ -244,12 +261,18 @@ def main():
     }
     </style>
 
-    <div class='emoji-top'>🎧</div>
-    <h1 class='custom-header'> PeePit</h1>
-    <div class='custom-subtitle'>Turns your PDF to MP3 🎧</div>
+    <div class="fullscreen-container">
+        <div class='emoji-top'>🎧</div>
+        <h1 class='custom-header'>PeePit</h1>
+        <div class='custom-subtitle'>Turns your PDF to MP3 🎧</div>
+    </div>
     """, unsafe_allow_html=True)
 
-    pdf_url = st.text_input("Or enter a PDF URL")
+    # Keep inputs visible without pushing layout height
+    st.text_input("Or enter a PDF URL")
+    st.file_uploader("🎧 Upload a PDF", type=["pdf"], label_visibility="visible")
+
+
 
 
     uploaded_file = st.file_uploader(
