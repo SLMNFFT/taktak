@@ -170,7 +170,6 @@ def save_images_as_pdf(images):
 # --- MAIN APP ---
 
 def main():
-    # Simple centered header, no upload here
     st.markdown("""
 <h1 style='
     color: white;
@@ -184,14 +183,15 @@ def main():
 </h1>
 """, unsafe_allow_html=True)
 
-    # The main uploader and URL input area centered but small or empty here
-    # (You can keep your other app content here if needed)
-    pdf_file = st.file_uploader("Turn your PDF to a MP3 file. (PDF images and image PDFs are not supported)", type=["pdf"])
     pdf_url = st.text_input("Or enter a PDF URL")
 
-    # your existing processing logic unchanged below...
+    # Hide the default file uploader on top by not calling it or hiding label
+    # Instead, put a hidden uploader at bottom and trigger it with your own button
 
-    # --- Now add a big green upload button centered at the bottom ---
+    # Hidden uploader with no label (must be in the app so Streamlit gets file)
+    uploaded_file = st.file_uploader("", type=["pdf"], label_visibility="hidden", key="hidden_uploader")
+
+    # Big green upload button at bottom triggers the hidden input
     st.markdown("""
 <style>
 .center-bottom-upload {
@@ -228,22 +228,35 @@ input[type="file"] {
 </style>
 
 <div class="center-bottom-upload">
-    <label for="big-pdf-upload" id="big-upload-label" role="button" tabindex="0">
+    <label for="hidden-uploader" id="big-upload-label" role="button" tabindex="0">
         🎧 Tap here to Upload your PDF
     </label>
-    <input type="file" id="big-pdf-upload" accept=".pdf" />
+    <input type="file" id="hidden-uploader" accept=".pdf" />
 </div>
+
+<script>
+document.getElementById('hidden-uploader').addEventListener('change', function() {
+    const fileInput = this;
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(fileInput.files[0]);
+    const hiddenUploader = window.parent.document.querySelector('input[data-testid="stFileUploader"]');
+    if (hiddenUploader) {
+        hiddenUploader.files = dataTransfer.files;
+        hiddenUploader.dispatchEvent(new Event('change'));
+    }
+});
+</script>
 """, unsafe_allow_html=True)
 
-    # Hidden file uploader to catch file uploads normally
-    hidden_pdf_file = st.file_uploader("", type=["pdf"], label_visibility="hidden")
-
-    # Use hidden_pdf_file as your uploaded PDF in the rest of your app code
+    # Now handle the uploaded file normally
     pdf_path = None
-    if hidden_pdf_file:
+    if uploaded_file:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-            tmp.write(hidden_pdf_file.read())
+            tmp.write(uploaded_file.read())
             pdf_path = tmp.name
+
+    # Your existing processing logic goes here...
+
 
     # rest of your main() unchanged...
 
