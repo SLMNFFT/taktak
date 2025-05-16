@@ -168,6 +168,8 @@ def save_images_as_pdf(images):
 
 
 # --- MAIN APP ---
+import streamlit as st
+
 def main():
     st.markdown("""
     <style>
@@ -177,41 +179,38 @@ def main():
     }
 
     .block-container {
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
     }
 
-    .fullscreen-container {
-        height: 100vh;
+    .container {
         display: flex;
         flex-direction: column;
         justify-content: center;
-        align-items: center;
+        height: 100vh;
+        text-align: center;
     }
 
     .custom-header {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        text-align: center;
         font-weight: 600;
-        font-size: 6rem;
+        font-size: 4rem;
         margin: 0.5rem 0;
         color: white;
     }
 
     .custom-subtitle {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        text-align: center;
         font-weight: 500;
         font-size: 1rem;
-        margin-bottom: 2rem;
+        margin-bottom: 1rem;
         color: white;
     }
 
     .emoji-top {
-        font-size: 8rem;
-        text-align: center;
+        font-size: 4rem;
         transform: rotate(180deg);
-        margin-bottom: 0.2rem;
+        margin-bottom: 0.3rem;
     }
 
     /* Theme-aware colors */
@@ -220,7 +219,6 @@ def main():
             color: yellow !important;
         }
     }
-
     @media (prefers-color-scheme: light) {
         .custom-header, .custom-subtitle {
             color: black !important;
@@ -259,19 +257,15 @@ def main():
     }
     </style>
 
-    <div class="fullscreen-container">
-        <div class='emoji-top'>🎧</div>
-        <h1 class='custom-header'>PeePit</h1>
-        <div class='custom-subtitle'>Turns your PDF to MP3 🎧</div>
+    <div class="container">
+        <div class="emoji-top">🎧</div>
+        <h1 class="custom-header">PeePit</h1>
+        <div class="custom-subtitle">Turns your PDF to MP3 🎧</div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Keep inputs visible without pushing layout height
+    # Text input and uploader positioned below the header
     st.text_input("Or enter a PDF URL")
-
-    # Now place Streamlit inputs under it
-    with st.container():
-        st.text_input("Or enter a PDF URL", label_visibility="collapsed")
     uploaded_file = st.file_uploader(
         label="🎧 peep my file",
         type=["pdf"],
@@ -281,6 +275,7 @@ def main():
 
     if uploaded_file:
         st.success(f"Uploaded: {uploaded_file.name}")
+
 
     # Now handle the uploaded file normally
     pdf_path = None
