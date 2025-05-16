@@ -188,7 +188,7 @@ def main():
     font-weight: 600;
     margin-top: 2rem;
     margin-bottom: 2rem;
-    font-size: 1.5rem;
+    font-size: 1.0rem;
 '>
 Turns your pdf to mp3🎧 
 </h1>
