@@ -193,11 +193,11 @@ def main():
     }
 
     .emoji-top {
-        font-size: 3rem;
+        font-size: 6rem;
         display: block;
         text-align: center;
         transform: rotate(180deg);
-        margin-bottom: 0.2rem;
+        margin-bottom: 5rem;
     }
 
     /* Theme-aware colors */
