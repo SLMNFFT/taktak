@@ -170,23 +170,38 @@ def save_images_as_pdf(images):
 # --- MAIN APP ---
 
 def main():
+    # Simple centered header, no upload here
+    st.markdown("""
+<h1 style='
+    color: white;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+    font-weight: 600;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+'>
+🎧 PeePit
+</h1>
+""", unsafe_allow_html=True)
+
+    # The main uploader and URL input area centered but small or empty here
+    # (You can keep your other app content here if needed)
+    pdf_file = st.file_uploader("Turn your PDF to a MP3 file. (PDF images and image PDFs are not supported)", type=["pdf"])
+    pdf_url = st.text_input("Or enter a PDF URL")
+
+    # your existing processing logic unchanged below...
+
+    # --- Now add a big green upload button centered at the bottom ---
     st.markdown("""
 <style>
-/* Center container */
-.center-container {
+.center-bottom-upload {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-top: 2rem;
+    justify-content: center;
+    margin-top: 4rem;
+    margin-bottom: 2rem;
 }
 
-/* Hide default file uploader button */
-input[type="file"] {
-    display: none;
-}
-
-/* Big header-like upload button */
-#upload-label {
+#big-upload-label {
     background: #2ecc71;
     color: white;
     padding: 1.5rem 2rem;
@@ -200,64 +215,38 @@ input[type="file"] {
     user-select: none;
     width: 100%;
     max-width: 400px;
-    margin-bottom: 1.5rem;
     transition: background-color 0.3s ease;
 }
 
-#upload-label:hover {
+#big-upload-label:hover {
     background: #27ae60;
 }
 
-/* Center URL input */
-#pdf-url-input {
-    width: 100%;
-    max-width: 400px;
-    font-size: 1rem;
-    padding: 0.6rem 1rem;
-    border-radius: 8px;
-    border: none;
-    outline: none;
+input[type="file"] {
+    display: none;
 }
 </style>
 
-<div class="center-container">
-    <label for="pdf-upload" id="upload-label" role="button" tabindex="0">
-        🎧 Tap to Upload your PDF
+<div class="center-bottom-upload">
+    <label for="big-pdf-upload" id="big-upload-label" role="button" tabindex="0">
+        🎧 Tap here to Upload your PDF
     </label>
-    <input type="file" id="pdf-upload" accept=".pdf" />
-    <input type="url" id="pdf-url-input" placeholder="Or enter a PDF URL" />
+    <input type="file" id="big-pdf-upload" accept=".pdf" />
 </div>
-
-<script>
-    const fileInput = document.getElementById('pdf-upload');
-    const urlInput = document.getElementById('pdf-url-input');
-
-    // Forward the file to Streamlit uploader (using Streamlit's setComponentValue method is not possible here, so fallback is below)
-    fileInput.addEventListener('change', () => {
-        // This just changes the file input, Streamlit will catch it normally on rerun
-        // No direct JS->Streamlit interaction here
-    });
-
-    // If you want to sync the URL input to Streamlit, you have to keep your st.text_input below.
-</script>
 """, unsafe_allow_html=True)
 
-    # Use Streamlit uploader and url input hidden with CSS, syncing done below
-    # Show hidden uploader and input in Streamlit but visually hidden,
-    # We will catch their values below from Streamlit's normal inputs to keep your backend intact
+    # Hidden file uploader to catch file uploads normally
+    hidden_pdf_file = st.file_uploader("", type=["pdf"], label_visibility="hidden")
 
-    # Place a hidden uploader to catch files normally (this is the real input)
-    pdf_file = st.file_uploader("", type=["pdf"], label_visibility="hidden")
-    pdf_url = st.text_input("", placeholder="Or enter a PDF URL")
-
-    # Sync the above values with the JS UI is not straightforward; this is a best effort without custom components.
-    # So the user will still have to tap the Streamlit uploader on desktop, but on smartphones the big label triggers native upload.
-
+    # Use hidden_pdf_file as your uploaded PDF in the rest of your app code
     pdf_path = None
-    if pdf_file:
+    if hidden_pdf_file:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-            tmp.write(pdf_file.read())
+            tmp.write(hidden_pdf_file.read())
             pdf_path = tmp.name
+
+    # rest of your main() unchanged...
+
 
     # ... rest unchanged ...
 
