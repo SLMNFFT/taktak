@@ -235,8 +235,6 @@ def main():
 
     </style>
     <h1 class='custom-header'><span class="rotated-emoji'>🎧</span> PeePit</h1>
-
-    <h1 class='custom-header'>🎧 PeePit</h1>
     <div class='custom-subtitle'>Turns your PDF to MP3 🎧</div>
     """, unsafe_allow_html=True)
 
