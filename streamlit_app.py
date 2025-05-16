@@ -178,7 +178,7 @@ def main():
         font-weight: 600;
         margin-top: 5rem;
         margin-bottom: 1rem;
-        font-size: 4rem;
+        font-size: 6rem;
         color: white;
     }
 
@@ -197,7 +197,7 @@ def main():
         display: block;
         text-align: center;
         transform: rotate(180deg);
-        margin-bottom: 5rem;
+        margin-bottom: 0.1rem;
     }
 
     /* Theme-aware colors */
@@ -245,7 +245,7 @@ def main():
     </style>
 
     <div class='emoji-top'>🎧</div>
-    <h1 class='custom-header'>PeePit</h1>
+    <h1 class='custom-header'> PeePit</h1>
     <div class='custom-subtitle'>Turns your PDF to MP3 🎧</div>
     """, unsafe_allow_html=True)
 
