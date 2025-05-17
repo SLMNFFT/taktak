@@ -8,7 +8,7 @@ from PIL import Image
 from fpdf import FPDF
 import io
 from gtts import gTTS
-from langdetect import detect, LangDetectException
+import pycld3 as cld3
 from bidi.algorithm import get_display
 
 st.set_page_config(
@@ -44,6 +44,12 @@ st.markdown("""
         background-color: #ffeb3b !important;
         color: #000 !important;
     }
+    
+    .language-warning {
+        color: #ff6666;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -53,20 +59,26 @@ TTS_LANGUAGES = {
     "Arabic 🇸🇦": "ar",
     "Spanish 🇪🇸": "es",
     "French 🇫🇷": "fr",
-    "German 🇩🇪": "de",
-    "Italian 🇮🇹": "it"
+    "German 🇩🇪": "de"
 }
 
 TESSERACT_LANG_MAP = {
     'en': 'eng',
-    'ar': 'ara'
+    'ar': 'ara',
+    'es': 'spa',
+    'fr': 'fra',
+    'de': 'deu'
 }
 
 # --- HELPER FUNCTIONS ---
 def detect_content_language(text):
     try:
-        return detect(text)
-    except LangDetectException:
+        if len(text) < 10:  # Minimum text length for reliable detection
+            return 'en'
+        result = cld3.get_language(text)
+        return result.language if result.is_reliable else 'en'
+    except Exception as e:
+        st.error(f"Language detection error: {str(e)}")
         return 'en'
 
 def extract_text_with_ocr(pdf_path, pages, lang='eng'):
@@ -98,7 +110,8 @@ def extract_text_from_pdf(pdf_path, selected_pages):
     valid_ocr_pages = [p for p in pages_without_text if 1 <= p <= len(reader.pages)]
     if valid_ocr_pages:
         st.warning(f"🔍 Running OCR on pages: {valid_ocr_pages}")
-        ocr_lang = TESSERACT_LANG_MAP.get(detect_content_language(extracted_text), 'eng')
+        content_lang = detect_content_language(extracted_text)
+        ocr_lang = TESSERACT_LANG_MAP.get(content_lang, 'eng')
         ocr_text = extract_text_with_ocr(pdf_path, valid_ocr_pages, lang=ocr_lang)
         extracted_text += ocr_text
 
@@ -110,8 +123,8 @@ def generate_audio(text, lang="en"):
         temp_audio_path = tempfile.mktemp(suffix=".mp3")
         tts.save(temp_audio_path)
         return temp_audio_path
-    except:
-        st.error("Error generating audio. Please try a different language selection.")
+    except Exception as e:
+        st.error(f"Audio generation failed: {str(e)}")
         return None
 
 # --- MAIN APP ---
@@ -127,7 +140,7 @@ def main():
     """, unsafe_allow_html=True)
 
     # Language selection in sidebar
-    tts_lang = st.sidebar.radio(
+    tts_lang = st.sidebar.selectbox(
         "Speaker Language",
         list(TTS_LANGUAGES.keys()),
         index=0,
@@ -140,16 +153,16 @@ def main():
 
     if uploaded_file:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-            tmp.write(uploaded_file.read())
+            tmp.write(uploaded_file.getvalue())
             pdf_path = tmp.name
 
-        reader = PdfReader(pdf_path)
-        total_pages = len(reader.pages)
-        selected_pages = st.multiselect(
-            "Select pages to process",
-            list(range(1, total_pages + 1)),
-            default=[1]
-        )
+        with pdfplumber.open(pdf_path) as pdf:
+            total_pages = len(pdf.pages)
+            selected_pages = st.multiselect(
+                "Select pages to process",
+                list(range(1, total_pages + 1)),
+                default=[1]
+            )
 
         if not selected_pages:
             st.error("Please select at least one valid page")
@@ -162,10 +175,9 @@ def main():
                 st.error("No extractable text found")
                 return
 
-            try:
-                content_lang = detect_content_language(full_text)
-            except:
-                content_lang = 'en'
+            content_lang = detect_content_language(full_text)
+            if content_lang not in TESSERACT_LANG_MAP:
+                st.warning(f"Unsupported content language detected: {content_lang}", icon="⚠️")
 
             col_left, col_right = st.columns(2)
 
@@ -174,12 +186,14 @@ def main():
                     search_term = st.text_input("🔎 Search within text", "")
                     show_ocr = st.checkbox("👁️ Show OCR text", value=True)
 
+                    filtered_text = full_text
                     if not show_ocr and ocr_pages:
                         pattern = r"--- Page (\d+).*?(?=(--- Page |\Z))"
                         filtered = re.findall(pattern, full_text, re.DOTALL)
-                        filtered_text = "\n\n".join(section for section, _ in filtered if int(section) not in ocr_pages)
-                    else:
-                        filtered_text = full_text
+                        filtered_text = "\n\n".join(
+                            section for section, _ in filtered 
+                            if int(section) not in ocr_pages
+                        )
 
                     if search_term:
                         filtered_text = re.sub(
@@ -189,30 +203,28 @@ def main():
                             flags=re.DOTALL,
                         )
 
-                    if content_lang == 'ar':
-                        filtered_text = get_display(filtered_text)
-                        text_class = "rtl-text"
-                    else:
-                        text_class = ""
+                    text_class = "rtl-text" if content_lang == 'ar' else ""
+                    display_text = get_display(filtered_text) if content_lang == 'ar' else filtered_text
 
                     st.markdown(f"""
                     <div class="text-container {text_class}">
-                        {filtered_text.replace("\n", "<br>")}
+                        {display_text.replace("\n", "<br>")}
                     </div>
                     """, unsafe_allow_html=True)
 
             with col_right:
                 with st.expander("🔊 Audio Playback", expanded=True):
-                    if st.button("Generate Audio"):
-                        audio_path = generate_audio(filtered_text, lang=tts_lang_code)
-                        if audio_path:
-                            st.audio(audio_path, format="audio/mp3")
-                            st.download_button(
-                                "Download MP3",
-                                data=open(audio_path, "rb").read(),
-                                file_name="audio_output.mp3",
-                                mime="audio/mpeg"
-                            )
+                    if st.button("Generate Audio", type="primary"):
+                        with st.spinner("Generating audio..."):
+                            audio_path = generate_audio(filtered_text, lang=tts_lang_code)
+                            if audio_path:
+                                st.audio(audio_path, format="audio/mp3")
+                                st.download_button(
+                                    "Download MP3",
+                                    data=open(audio_path, "rb").read(),
+                                    file_name="audiobook.mp3",
+                                    mime="audio/mpeg"
+                                )
 
 if __name__ == "__main__":
     main()
