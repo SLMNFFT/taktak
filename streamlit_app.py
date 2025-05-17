@@ -160,7 +160,7 @@ def main():
     tts_lang_code = TTS_LANGUAGES[tts_lang]
 
     uploaded_file = st.file_uploader("📤 Upload PDF", type=["pdf"])
-    url_link = st.text_input("🔗 Optional: Public URL to the document", placeholder="https://example.com/your-doc")
+    url_link = st.text_input("🔗 Optional: Public URL to the document", placeholder="https://www.peepit.io/example.pdf")
 
     pdf_path = None
     if uploaded_file:
