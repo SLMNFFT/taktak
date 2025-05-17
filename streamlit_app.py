@@ -11,6 +11,10 @@ from gtts import gTTS
 from bidi.algorithm import get_display
 from langdetect import detect, LangDetectException
 
+# NEW: Additional imports
+from pdf2image import convert_from_path
+import pytesseract
+
 st.set_page_config(
     page_title="Peepit Audiobook",
     layout="wide",
@@ -26,12 +30,10 @@ st.markdown("""
         line-height: 2;
         unicode-bidi: embed;
     }
-
     [data-testid="stAppViewContainer"] {
         background: #0f1123;
         color: #ffffff;
     }
-
     .text-container {
         padding: 1rem;
         background: #1A1B2F;
@@ -39,32 +41,28 @@ st.markdown("""
         margin: 1rem 0;
         white-space: pre-wrap;
     }
-
     mark {
         background-color: #ffeb3b !important;
         color: #000 !important;
     }
-
     .language-warning {
         color: #ff6666;
         font-size: 0.9rem;
         margin-top: 0.5rem;
     }
-
     .stDownloadButton button {
         background-color: #1f77b4;
         color: white;
         border-radius: 8px;
         margin-top: 1rem;
     }
-
     a {
         color: #1e90ff;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- LANGUAGE CONFIGURATION ---
+# Language Config
 TTS_LANGUAGES = {
     "English 🇺🇸": "en",
     "Arabic 🇸🇦": "ar",
@@ -81,7 +79,6 @@ TESSERACT_LANG_MAP = {
     'de': 'deu'
 }
 
-# --- HELPER FUNCTIONS ---
 def detect_content_language(text):
     try:
         if len(text) < 10:
@@ -91,8 +88,6 @@ def detect_content_language(text):
         return 'en'
 
 def extract_text_with_ocr(pdf_path, pages, lang='eng'):
-    from pdf2image import convert_from_path
-    import pytesseract
     text = ""
     images = convert_from_path(pdf_path, dpi=300, first_page=min(pages), last_page=max(pages))
     for i, img in zip(pages, images):
@@ -136,6 +131,18 @@ def generate_audio(text, lang="en"):
         st.error(f"Audio generation failed: {str(e)}")
         return None
 
+def export_text_to_pdf(text):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Arial", size=12)
+    lines = text.split('\n')
+    for line in lines:
+        pdf.multi_cell(0, 10, line)
+    temp_path = tempfile.mktemp(suffix=".pdf")
+    pdf.output(temp_path)
+    return temp_path
+
 # --- MAIN APP ---
 def main():
     st.markdown("""
@@ -148,18 +155,11 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    # Sidebar language selection
-    tts_lang = st.sidebar.selectbox(
-        "Speaker Language",
-        list(TTS_LANGUAGES.keys()),
-        index=0,
-        help="Select the desired voice language for audio output"
-    )
+    # Sidebar
+    tts_lang = st.sidebar.selectbox("Speaker Language", list(TTS_LANGUAGES.keys()), index=0)
     tts_lang_code = TTS_LANGUAGES[tts_lang]
 
     uploaded_file = st.file_uploader("📤 Upload PDF", type=["pdf"])
-
-    # Optional URL field
     url_link = st.text_input("🔗 Optional: Public URL to the document", placeholder="https://example.com/your-doc")
 
     pdf_path = None
@@ -170,11 +170,7 @@ def main():
 
         with pdfplumber.open(pdf_path) as pdf:
             total_pages = len(pdf.pages)
-            selected_pages = st.multiselect(
-                "Select pages to process",
-                list(range(1, total_pages + 1)),
-                default=[1]
-            )
+            selected_pages = st.multiselect("Select pages to process", list(range(1, total_pages + 1)), default=[1])
 
         if not selected_pages:
             st.error("Please select at least one valid page")
@@ -202,8 +198,7 @@ def main():
                         pattern = r"--- Page (\d+).*?(?=(--- Page |\Z))"
                         filtered = re.findall(pattern, full_text, re.DOTALL)
                         filtered_text = "\n\n".join(
-                            section for section, _ in filtered 
-                            if int(section) not in ocr_pages
+                            section for section, _ in filtered if int(section) not in ocr_pages
                         )
 
                     if search_term:
@@ -223,6 +218,17 @@ def main():
                     </div>
                     """, unsafe_allow_html=True)
 
+                    # Download OCR/Text as PDF
+                    if st.button("📄 Export Extracted Text as PDF"):
+                        pdf_export = export_text_to_pdf(filtered_text)
+                        with open(pdf_export, "rb") as f:
+                            st.download_button(
+                                label="Download PDF",
+                                data=f,
+                                file_name="extracted_text.pdf",
+                                mime="application/pdf"
+                            )
+
             with col_right:
                 with st.expander("🔊 Audio Playback", expanded=True):
                     if st.button("Generate Audio", type="primary"):
@@ -236,8 +242,6 @@ def main():
                                     file_name="audiobook.mp3",
                                     mime="audio/mpeg"
                                 )
-
-                                # Display public URL if provided
                                 if url_link.strip():
                                     st.markdown(f"""
                                     <div style="margin-top: 1rem;">
@@ -245,6 +249,12 @@ def main():
                                         <a href="{url_link}" target="_blank">{url_link}</a>
                                     </div>
                                     """, unsafe_allow_html=True)
+
+            # Visual preview
+            with st.expander("🖼️ Page Previews", expanded=False):
+                images = convert_from_path(pdf_path, dpi=100, first_page=min(selected_pages), last_page=max(selected_pages))
+                for i, img in zip(selected_pages, images):
+                    st.image(img, caption=f"Page {i}", use_column_width=True)
 
 if __name__ == "__main__":
     main()
