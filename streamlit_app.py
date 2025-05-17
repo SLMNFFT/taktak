@@ -11,7 +11,6 @@ from gtts import gTTS
 from bidi.algorithm import get_display
 from langdetect import detect, LangDetectException
 
-
 st.set_page_config(
     page_title="Peepit Audiobook",
     layout="wide",
@@ -27,12 +26,12 @@ st.markdown("""
         line-height: 2;
         unicode-bidi: embed;
     }
-    
+
     [data-testid="stAppViewContainer"] {
         background: #0f1123;
         color: #ffffff;
     }
-    
+
     .text-container {
         padding: 1rem;
         background: #1A1B2F;
@@ -40,16 +39,27 @@ st.markdown("""
         margin: 1rem 0;
         white-space: pre-wrap;
     }
-    
+
     mark {
         background-color: #ffeb3b !important;
         color: #000 !important;
     }
-    
+
     .language-warning {
         color: #ff6666;
         font-size: 0.9rem;
         margin-top: 0.5rem;
+    }
+
+    .stDownloadButton button {
+        background-color: #1f77b4;
+        color: white;
+        border-radius: 8px;
+        margin-top: 1rem;
+    }
+
+    a {
+        color: #1e90ff;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -74,12 +84,10 @@ TESSERACT_LANG_MAP = {
 # --- HELPER FUNCTIONS ---
 def detect_content_language(text):
     try:
-        if len(text) < 10:  # Minimum text length for reliable detection
+        if len(text) < 10:
             return 'en'
-        
-        return result.language if result.is_reliable else 'en'
-    except Exception as e:
-        st.error(f"Language detection error: {str(e)}")
+        return detect(text)
+    except LangDetectException:
         return 'en'
 
 def extract_text_with_ocr(pdf_path, pages, lang='eng'):
@@ -140,7 +148,7 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    # Language selection in sidebar
+    # Sidebar language selection
     tts_lang = st.sidebar.selectbox(
         "Speaker Language",
         list(TTS_LANGUAGES.keys()),
@@ -150,8 +158,11 @@ def main():
     tts_lang_code = TTS_LANGUAGES[tts_lang]
 
     uploaded_file = st.file_uploader("📤 Upload PDF", type=["pdf"])
-    pdf_path = None
 
+    # Optional URL field
+    url_link = st.text_input("🔗 Optional: Public URL to the document", placeholder="https://example.com/your-doc")
+
+    pdf_path = None
     if uploaded_file:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             tmp.write(uploaded_file.getvalue())
@@ -171,7 +182,6 @@ def main():
 
         with st.spinner("🔍 Analyzing document..."):
             full_text, ocr_pages = extract_text_from_pdf(pdf_path, selected_pages)
-            
             if not full_text:
                 st.error("No extractable text found")
                 return
@@ -226,6 +236,15 @@ def main():
                                     file_name="audiobook.mp3",
                                     mime="audio/mpeg"
                                 )
+
+                                # Display public URL if provided
+                                if url_link.strip():
+                                    st.markdown(f"""
+                                    <div style="margin-top: 1rem;">
+                                        🔗 <strong>Source Link:</strong> 
+                                        <a href="{url_link}" target="_blank">{url_link}</a>
+                                    </div>
+                                    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
