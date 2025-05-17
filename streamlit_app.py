@@ -19,7 +19,7 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-/* Styling for the Streamlit page */
+/* Updated CSS for RTL support */
 [data-testid="stColumns"] {
     display: flex;
     align-items: stretch;
@@ -91,29 +91,44 @@ body, pre {
     object-fit: contain;
     user-select: none;
 }
+
+/* Arabic text styling */
+.arabic-text {
+    direction: rtl;
+    text-align: right;
+    font-family: Tahoma, Arial, sans-serif !important;
+    line-height: 2;
+}
 </style>
 """, unsafe_allow_html=True)
 
-
 # --- HELPER FUNCTIONS ---
+
+TESSERACT_LANG_MAP = {
+    'en': 'eng',
+    'es': 'spa',
+    'fr': 'fra',
+    'de': 'deu',
+    'ar': 'ara'
+}
 
 def pil_to_base64(img):
     buffered = io.BytesIO()
     img.save(buffered, format="PNG")
     return base64.b64encode(buffered.getvalue()).decode()
 
-def extract_text_with_ocr(pdf_path, pages):
+def extract_text_with_ocr(pdf_path, pages, lang='eng'):
     from pdf2image import convert_from_path
     import pytesseract
     text = ""
     images = convert_from_path(pdf_path, dpi=300, first_page=min(pages), last_page=max(pages))
     for i, img in zip(pages, images):
         text += f"--- Page {i} (OCR) ---\n"
-        text += pytesseract.image_to_string(img)
+        text += pytesseract.image_to_string(img, lang=lang)
         text += "\n\n"
     return text
 
-def extract_text_from_pdf(pdf_path, selected_pages):
+def extract_text_from_pdf(pdf_path, selected_pages, ocr_lang='eng'):
     reader = PdfReader(pdf_path)
     extracted_text = ""
     pages_without_text = []
@@ -134,11 +149,10 @@ def extract_text_from_pdf(pdf_path, selected_pages):
     valid_ocr_pages = [p for p in pages_without_text if 1 <= p <= len(reader.pages)]
     if valid_ocr_pages:
         st.warning(f"🔍 Running OCR on pages: {valid_ocr_pages}")
-        ocr_text = extract_text_with_ocr(pdf_path, valid_ocr_pages)
+        ocr_text = extract_text_with_ocr(pdf_path, valid_ocr_pages, lang=ocr_lang)
         extracted_text += ocr_text
 
     return extracted_text.strip(), valid_ocr_pages
-
 
 def generate_audio(text, lang="en", rate=1.0, gender="male"):
     tts = gTTS(text=text, lang=lang, slow=False)
@@ -166,10 +180,7 @@ def save_images_as_pdf(images):
     
     return pdf_path
 
-
 # --- MAIN APP ---
-import streamlit as st
-
 def main():
     st.markdown("""
     <style>
@@ -190,7 +201,6 @@ def main():
         margin-bottom: 2rem;
     }
 
-    /* Theme-aware colors */
     @media (prefers-color-scheme: dark) {
         .custom-header, .custom-subtitle {
             color: white !important;
@@ -228,13 +238,13 @@ def main():
     section[data-testid="stFileUploader"] label:hover {
         background: #27ae60 !important;
     }
-.rotated-emoji {
-    display: inline-block;
-    transform: rotate(180deg);
-}
-</style>
+    .rotated-emoji {
+        display: inline-block;
+        transform: rotate(180deg);
+    }
+    </style>
 
-<h1 class='custom-header'><span class="rotated-emoji">🎧</span> PeePit</h1>
+    <h1 class='custom-header'><span class="rotated-emoji">🎧</span> PeePit</h1>
     <div class='custom-subtitle'>Turns your PDF to MP3 🎧</div>
     """, unsafe_allow_html=True)
 
@@ -250,8 +260,6 @@ def main():
     if uploaded_file:
         st.success(f"Uploaded: {uploaded_file.name}")
 
-
-    # Now handle the uploaded file normally
     pdf_path = None
     if uploaded_file:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
@@ -267,15 +275,17 @@ def main():
             st.error("Please select at least one valid page")
             return
 
+        lang = st.sidebar.radio("Select Language", ("en", "es", "fr", "de", "ar"))
+        ocr_lang = TESSERACT_LANG_MAP.get(lang, 'eng')
+
         with st.spinner("🔍 Analyzing document..."):
-            full_text, ocr_pages = extract_text_from_pdf(pdf_path, selected_pages)
+            full_text, ocr_pages = extract_text_from_pdf(pdf_path, selected_pages, ocr_lang)
             if not full_text:
                 st.error("No extractable text found in selected pages")
                 return
 
             col_left, col_right = st.columns(2)
 
-            # --- LEFT COLUMN: TEXT + AUDIO ---
             with col_left:
                 with st.expander("📜 Extracted Text", expanded=True):
                     search_term = st.text_input("🔎 Search within text", "")
@@ -298,12 +308,16 @@ def main():
                             flags=re.DOTALL,
                         )
 
-                    st.markdown(filtered_text.replace("\n", "<br>").replace("  ", " "), unsafe_allow_html=True)
+                    displayed_text = filtered_text.replace("\n", "<br>").replace("  ", " ")
+                    if lang == 'ar':
+                        displayed_text = f'<div class="arabic-text">{displayed_text}</div>'
+                    else:
+                        displayed_text = f'<div>{displayed_text}</div>'
 
-            # --- RIGHT COLUMN: AUDIO ---
+                    st.markdown(displayed_text, unsafe_allow_html=True)
+
             with col_right:
                 with st.expander("🔊 Audio Playback", expanded=True):
-                    lang = st.radio("Select language", ("en", "es", "fr", "de"))
                     rate = st.slider("Speed", 0.5, 2.0, 1.0, 0.1)
                     gender = st.radio("Select voice type", ("male", "female"))
 
@@ -312,8 +326,6 @@ def main():
                     audio_bytes = audio_file.read()
                     st.audio(audio_bytes, format="audio/mp3")
 
-            # --- IMAGE EXPORT (Temporary Images) ---
-            # Create dummy images as examples
             image1 = Image.new("RGB", (300, 300), color="blue")
             image2 = Image.new("RGB", (300, 300), color="green")
             
@@ -324,7 +336,6 @@ def main():
                 "application/pdf", 
                 key="export_pdf"
             )
-
 
 if __name__ == "__main__":
     main()
