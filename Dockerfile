@@ -13,13 +13,11 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr-fra \
     tesseract-ocr-spa \
     tesseract-ocr-deu \
-    libtesseract-dev \
     poppler-utils \
+    libprotobuf-dev \
+    protobuf-compiler \
     build-essential \
     libgl1 \
-    ghostscript \
-    ffmpeg \
-    libsndfile1 \
     fonts-dejavu \
     fonts-noto \
     fonts-noto-arabic \
@@ -28,14 +26,16 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Update font cache
-RUN fc-cache -f -v
+# Update font cache and verify installations
+RUN fc-cache -f -v && \
+    tesseract --list-langs && \
+    echo "Installed fonts:" && fc-list
 
 # Set working directory
 WORKDIR /app
 
 # Copy requirements and install Python packages
-COPY requirements.txt . 
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy app source code
