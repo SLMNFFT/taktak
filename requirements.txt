@@ -1,25 +1,23 @@
-# Streamlit UI framework
+# Core dependencies
 streamlit==1.38.0
 
-# PDF and OCR handling
+# PDF processing
 pypdf==3.16.4
 pdfplumber==0.10.3
 pdf2image==1.17.0
-pytesseract==0.3.10
 
-# Image processing
+# OCR and image processing
+pytesseract==0.3.10
 Pillow==10.3.0
 
-# Text-to-speech
+# Text-to-speech (Arabic supported)
 gTTS==2.5.1
-pyttsx3==2.90
 
-# Language detection
-langdetect==1.0.9
+# PDF generation
+fpdf2==2.5.7
 
 # HTTP requests
 requests==2.31.0
 
-# PDF generation for export
-fpdf==1.7.2
-fpdf2==2.5.7
+# Internationalization
+python-bidi==0.4.2  # Add for proper Arabic text rendering
