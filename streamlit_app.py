@@ -19,7 +19,6 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    /* RTL text styling */
     .rtl-text {
         direction: rtl;
         text-align: right;
@@ -28,7 +27,6 @@ st.markdown("""
         unicode-bidi: embed;
     }
     
-    /* Base styling */
     [data-testid="stAppViewContainer"] {
         background: #0f1123;
         color: #ffffff;
@@ -49,12 +47,22 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- HELPER FUNCTIONS ---
+# --- LANGUAGE CONFIGURATION ---
+TTS_LANGUAGES = {
+    "English 🇺🇸": "en",
+    "Arabic 🇸🇦": "ar",
+    "Spanish 🇪🇸": "es",
+    "French 🇫🇷": "fr",
+    "German 🇩🇪": "de",
+    "Italian 🇮🇹": "it"
+}
+
 TESSERACT_LANG_MAP = {
     'en': 'eng',
     'ar': 'ara'
 }
 
+# --- HELPER FUNCTIONS ---
 def detect_content_language(text):
     try:
         return detect(text)
@@ -87,33 +95,24 @@ def extract_text_from_pdf(pdf_path, selected_pages):
         else:
             pages_without_text.append(i)
 
-    # Auto-detect OCR language
-    detected_lang = 'eng'
-    if extracted_text:
-        try:
-            detected_lang = detect_content_language(extracted_text)
-        except:
-            pass
-
     valid_ocr_pages = [p for p in pages_without_text if 1 <= p <= len(reader.pages)]
     if valid_ocr_pages:
         st.warning(f"🔍 Running OCR on pages: {valid_ocr_pages}")
-        ocr_lang = TESSERACT_LANG_MAP.get(detected_lang, 'eng')
+        ocr_lang = TESSERACT_LANG_MAP.get(detect_content_language(extracted_text), 'eng')
         ocr_text = extract_text_with_ocr(pdf_path, valid_ocr_pages, lang=ocr_lang)
         extracted_text += ocr_text
 
     return extracted_text.strip(), valid_ocr_pages
 
-def generate_audio(text):
+def generate_audio(text, lang="en"):
     try:
-        lang = detect_content_language(text)
+        tts = gTTS(text=text, lang=lang, slow=False)
+        temp_audio_path = tempfile.mktemp(suffix=".mp3")
+        tts.save(temp_audio_path)
+        return temp_audio_path
     except:
-        lang = 'en'
-        
-    tts = gTTS(text=text, lang=lang, slow=False)
-    temp_audio_path = tempfile.mktemp(suffix=".mp3")
-    tts.save(temp_audio_path)
-    return temp_audio_path
+        st.error("Error generating audio. Please try a different language selection.")
+        return None
 
 # --- MAIN APP ---
 def main():
@@ -126,6 +125,15 @@ def main():
         Turns your PDF to MP3 🎧
     </div>
     """, unsafe_allow_html=True)
+
+    # Language selection in sidebar
+    tts_lang = st.sidebar.radio(
+        "Speaker Language",
+        list(TTS_LANGUAGES.keys()),
+        index=0,
+        help="Select the desired voice language for audio output"
+    )
+    tts_lang_code = TTS_LANGUAGES[tts_lang]
 
     uploaded_file = st.file_uploader("📤 Upload PDF", type=["pdf"])
     pdf_path = None
@@ -154,7 +162,6 @@ def main():
                 st.error("No extractable text found")
                 return
 
-            # Detect content language for display
             try:
                 content_lang = detect_content_language(full_text)
             except:
@@ -182,7 +189,6 @@ def main():
                             flags=re.DOTALL,
                         )
 
-                    # Apply RTL formatting for Arabic content
                     if content_lang == 'ar':
                         filtered_text = get_display(filtered_text)
                         text_class = "rtl-text"
@@ -197,8 +203,16 @@ def main():
 
             with col_right:
                 with st.expander("🔊 Audio Playback", expanded=True):
-                    audio_path = generate_audio(filtered_text)
-                    st.audio(audio_path, format="audio/mp3")
+                    if st.button("Generate Audio"):
+                        audio_path = generate_audio(filtered_text, lang=tts_lang_code)
+                        if audio_path:
+                            st.audio(audio_path, format="audio/mp3")
+                            st.download_button(
+                                "Download MP3",
+                                data=open(audio_path, "rb").read(),
+                                file_name="audio_output.mp3",
+                                mime="audio/mpeg"
+                            )
 
 if __name__ == "__main__":
     main()
