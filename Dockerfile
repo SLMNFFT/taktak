@@ -1,11 +1,8 @@
-# Base image with Python 3.11 and slim tools
 FROM python:3.11-slim
 
-# Environment settings
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     tesseract-ocr-eng \
@@ -26,24 +23,20 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Update font cache and verify installations
-RUN fc-cache -f -v && \
-    tesseract --list-langs && \
-    echo "Installed fonts:" && fc-list
+RUN fc-cache -f -v
 
-# Set working directory
 WORKDIR /app
 
-# Copy requirements and install Python packages
+# Upgrade pip first
+RUN pip install --upgrade pip
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy app source code
 COPY . .
 
 EXPOSE 8501
 
-# Streamlit environment variables
 ENV STREAMLIT_SERVER_HEADLESS=true
 ENV STREAMLIT_SERVER_PORT=8501
 ENV STREAMLIT_SERVER_ENABLECORS=false
