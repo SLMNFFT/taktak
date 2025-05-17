@@ -9,3 +9,5 @@ fpdf2==2.5.7
 pycld3==0.22
 python-bidi==0.4.2
 protobuf==4.25.3
+markdown-it-py==2.2.0  # Pinned to compatible version
+rich==13.7.1  # Pinned to stable version
