@@ -1,23 +1,11 @@
-# Core dependencies
 streamlit==1.38.0
-
-# PDF processing
 pypdf==3.16.4
 pdfplumber==0.10.3
 pdf2image==1.17.0
-
-# OCR and image processing
 pytesseract==0.3.10
 Pillow==10.3.0
-
-# Text-to-speech (Arabic supported)
 gTTS==2.5.1
-
-# PDF generation
 fpdf2==2.5.7
-
-# HTTP requests
-requests==2.31.0
-
-# Internationalization
-python-bidi==0.4.2  # Add for proper Arabic text rendering
+pycld3==0.22
+python-bidi==0.4.2
+protobuf==4.25.3
