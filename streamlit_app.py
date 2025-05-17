@@ -8,8 +8,9 @@ from PIL import Image
 from fpdf import FPDF
 import io
 from gtts import gTTS
-import pycld3 as cld3
 from bidi.algorithm import get_display
+from langdetect import detect, LangDetectException
+
 
 st.set_page_config(
     page_title="Peepit Audiobook",
@@ -75,7 +76,7 @@ def detect_content_language(text):
     try:
         if len(text) < 10:  # Minimum text length for reliable detection
             return 'en'
-        result = cld3.get_language(text)
+        
         return result.language if result.is_reliable else 'en'
     except Exception as e:
         st.error(f"Language detection error: {str(e)}")
