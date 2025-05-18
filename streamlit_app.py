@@ -12,8 +12,6 @@ from bidi.algorithm import get_display
 from langdetect import detect, LangDetectException
 from pdf2image import convert_from_path
 import pytesseract
-from arabic_reshaper import reshape
-import os
 
 st.set_page_config(
     page_title="Peepit Audiobook",
@@ -135,26 +133,21 @@ def export_text_to_pdf(text, lang='en'):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
-
     if lang == 'ar':
-        # Load Arabic font - make sure the .ttf file is in the same folder as this script
-        font_path = os.path.join(os.path.dirname(__file__), "NotoSansArabic-Regular.ttf")
-        pdf.add_font("NotoArabic", "", font_path, uni=True)
-        pdf.set_font("NotoArabic", size=14)
-
-        # Reshape and reorder the Arabic text for correct display
-        reshaped_text = reshape(text)
+        # Arabic text support: reshape and bidi
+        import arabic_reshaper
+        reshaped_text = arabic_reshaper.reshape(text)
         bidi_text = get_display(reshaped_text)
-
-        lines = bidi_text.split('\n')
-        for line in lines:
-            pdf.multi_cell(0, 10, line, align='R')
+        pdf.add_font('Arial', '', '', uni=True)
+        pdf.set_font('Arial', size=12)
+        # Split by lines to handle line breaks
+        for line in bidi_text.split('\n'):
+            pdf.multi_cell(0, 10, line)
     else:
         pdf.set_font("Arial", size=12)
         lines = text.split('\n')
         for line in lines:
             pdf.multi_cell(0, 10, line)
-
     temp_path = tempfile.mktemp(suffix=".pdf")
     pdf.output(temp_path)
     return temp_path
@@ -215,19 +208,15 @@ def main():
 
                     filtered_text = full_text
                     if not show_ocr and ocr_pages:
-                        # Remove OCR page blocks
-                        filtered_text = ""
+                        # Remove OCR pages sections from displayed text
                         pattern = r"--- Page (\d+).*?(?=(--- Page |\Z))"
-                        matches = re.findall(pattern, full_text, re.DOTALL)
-                        # re.findall returns list of tuples with page number and content
-                        # Actually fix to capture content properly:
-                        # Use re.finditer for full blocks extraction
                         filtered_text = ""
-                        for match in re.finditer(r"(--- Page (\d+).*?)(?=--- Page \d+|\Z)", full_text, re.DOTALL):
-                            block = match.group(1)
-                            page_num = int(re.search(r"--- Page (\d+)", block).group(1))
+                        matches = re.finditer(pattern, full_text, re.DOTALL)
+                        for match in matches:
+                            page_num = int(match.group(1))
+                            page_text = match.group(0)
                             if page_num not in ocr_pages:
-                                filtered_text += block + "\n\n"
+                                filtered_text += page_text + "\n\n"
 
                     if search_term:
                         filtered_text = re.sub(
@@ -246,5 +235,41 @@ def main():
                     </div>
                     """, unsafe_allow_html=True)
 
-                    # Download OCR/Text as PDF
                     if st.button("📄 Export Extracted Text as PDF"):
+                        pdf_file_path = export_text_to_pdf(filtered_text, lang=content_lang)
+                        with open(pdf_file_path, "rb") as f:
+                            st.download_button(
+                                label="Download PDF",
+                                data=f,
+                                file_name="extracted_text.pdf",
+                                mime="application/pdf"
+                            )
+
+            with col_right:
+                with st.expander("🔊 Audio Playback", expanded=True):
+                    if st.button("Generate Audio", type="primary"):
+                        with st.spinner("Generating audio..."):
+                            audio_path = generate_audio(filtered_text, lang=tts_lang_code)
+                            if audio_path:
+                                st.audio(audio_path, format="audio/mp3")
+                                st.download_button(
+                                    "Download MP3",
+                                    data=open(audio_path, "rb").read(),
+                                    file_name="audiobook.mp3",
+                                    mime="audio/mpeg"
+                                )
+                                if url_link.strip():
+                                    st.markdown(f"""
+                                    <div style="margin-top: 1rem;">
+                                        🔗 <strong>Source Link:</strong> 
+                                        <a href="{url_link}" target="_blank">{url_link}</a>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+
+            with st.expander("🖼️ Page Previews", expanded=False):
+                images = convert_from_path(pdf_path, dpi=100, first_page=min(selected_pages), last_page=max(selected_pages))
+                for i, img in zip(selected_pages, images):
+                    st.image(img, caption=f"Page {i}", use_column_width=True)
+
+if __name__ == "__main__":
+    main()
