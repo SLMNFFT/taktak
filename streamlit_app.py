@@ -10,6 +10,7 @@ from langdetect import detect
 import arabic_reshaper
 from bidi.algorithm import get_display
 from fpdf import FPDF
+from PyPDF2 import PdfReader
 
 # إعداد الصفحة
 st.set_page_config(page_title="PeePit Audiobook", layout="centered")
