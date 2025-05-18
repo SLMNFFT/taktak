@@ -1,250 +1,82 @@
 import streamlit as st
-import re
-import tempfile
-import base64
+from PyPDF2 import PdfReader
 import pdfplumber
-from pypdf import PdfReader
-from PIL import Image
-from fpdf import FPDF
-import io
 from gtts import gTTS
-from bidi.algorithm import get_display
-from langdetect import detect, LangDetectException
-from pdf2image import convert_from_path
+import tempfile
 import pytesseract
-from arabic_reshaper import reshape
-import os
+from PIL import Image
+import io
+import re
+from bidi.algorithm import get_display
+import arabic_reshaper
+from pdf2image import convert_from_bytes
 
-st.set_page_config(
-    page_title="Peepit Audiobook",
-    layout="wide",
-    page_icon="🎧",
-)
-
-st.markdown("""
-<style>
-    .rtl-text {
-        direction: rtl;
-        text-align: right;
-        font-family: 'Noto Sans Arabic', Tahoma, sans-serif !important;
-        line-height: 2;
-        unicode-bidi: embed;
-    }
-    [data-testid="stAppViewContainer"] {
-        background: #0f1123;
-        color: #ffffff;
-    }
-    .text-container {
-        padding: 1rem;
-        background: #1A1B2F;
-        border-radius: 8px;
-        margin: 1rem 0;
-        white-space: pre-wrap;
-    }
-    mark {
-        background-color: #ffeb3b !important;
-        color: #000 !important;
-    }
-    .language-warning {
-        color: #ff6666;
-        font-size: 0.9rem;
-        margin-top: 0.5rem;
-    }
-    .stDownloadButton button {
-        background-color: #1f77b4;
-        color: white;
-        border-radius: 8px;
-        margin-top: 1rem;
-    }
-    a {
-        color: #1e90ff;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Language Config
-TTS_LANGUAGES = {
-    "English 🇺🇸": "en",
-    "Arabic 🇸🇦": "ar",
-    "Spanish 🇪🇸": "es",
-    "French 🇫🇷": "fr",
-    "German 🇩🇪": "de"
-}
-
-TESSERACT_LANG_MAP = {
-    'en': 'eng',
-    'ar': 'ara',
-    'es': 'spa',
-    'fr': 'fra',
-    'de': 'deu'
-}
-
-def detect_content_language(text):
-    try:
-        if len(text) < 10:
-            return 'en'
-        return detect(text)
-    except LangDetectException:
-        return 'en'
-
-def extract_text_with_ocr(pdf_path, pages, lang='eng'):
+def extract_text_from_pdf(pdf_file, content_lang):
     text = ""
-    images = convert_from_path(pdf_path, dpi=300, first_page=min(pages), last_page=max(pages))
-    for i, img in zip(pages, images):
-        text += f"--- Page {i} (OCR) ---\n"
-        text += pytesseract.image_to_string(img, lang=lang)
-        text += "\n\n"
+    try:
+        with pdfplumber.open(pdf_file) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text
+    except Exception:
+        text = ""
+        images = convert_from_bytes(pdf_file.read())
+        for image in images:
+            text += pytesseract.image_to_string(image, lang=content_lang)
     return text
 
-def extract_text_from_pdf(pdf_path, selected_pages):
-    reader = PdfReader(pdf_path)
-    extracted_text = ""
-    pages_without_text = []
+def clean_ocr_text(text):
+    return re.sub(r'[\x00-\x1F]+', '', text).strip()
 
-    for i in selected_pages:
-        if i < 1 or i > len(reader.pages):
-            continue
-        page = reader.pages[i - 1]
-        text = page.extract_text()
-        if text and text.strip():
-            extracted_text += f"--- Page {i} ---\n{text}\n\n"
-        else:
-            pages_without_text.append(i)
+def extract_and_highlight_text(text, keywords, lang):
+    pattern = '|'.join(re.escape(word) for word in keywords if word.strip())
+    if not pattern:
+        return text, []
+    matches = re.findall(pattern, text, re.IGNORECASE)
+    highlighted_text = re.sub(f"({pattern})", r'**\1**', text, flags=re.IGNORECASE)
+    return highlighted_text, matches
 
-    valid_ocr_pages = [p for p in pages_without_text if 1 <= p <= len(reader.pages)]
-    if valid_ocr_pages:
-        st.warning(f"🔍 Running OCR on pages: {valid_ocr_pages}")
-        content_lang = detect_content_language(extracted_text)
-        ocr_lang = TESSERACT_LANG_MAP.get(content_lang, 'eng')
-        ocr_text = extract_text_with_ocr(pdf_path, valid_ocr_pages, lang=ocr_lang)
-        extracted_text += ocr_text
-
-    return extracted_text.strip(), valid_ocr_pages
-
-def generate_audio(text, lang="en"):
-    try:
-        tts = gTTS(text=text, lang=lang, slow=False)
-        temp_audio_path = tempfile.mktemp(suffix=".mp3")
-        tts.save(temp_audio_path)
-        return temp_audio_path
-    except Exception as e:
-        st.error(f"Audio generation failed: {str(e)}")
-        return None
-
-def export_text_to_pdf(text, lang='en'):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
-
-    if lang == 'ar':
-        # Load Arabic font - make sure the .ttf file is in the same folder as this script
-        font_path = os.path.join(os.path.dirname(__file__), "NotoSansArabic-Regular.ttf")
-        pdf.add_font("NotoArabic", "", font_path, uni=True)
-        pdf.set_font("NotoArabic", size=14)
-
-        # Reshape and reorder the Arabic text for correct display
-        reshaped_text = reshape(text)
-        bidi_text = get_display(reshaped_text)
-
-        lines = bidi_text.split('\n')
-        for line in lines:
-            pdf.multi_cell(0, 10, line, align='R')
-    else:
-        pdf.set_font("Arial", size=12)
-        lines = text.split('\n')
-        for line in lines:
-            pdf.multi_cell(0, 10, line)
-
-    temp_path = tempfile.mktemp(suffix=".pdf")
-    pdf.output(temp_path)
-    return temp_path
-
-# --- MAIN APP ---
 def main():
-    st.markdown("""
-<div style="text-align: center; font-family: 'Segoe UI'; margin: 8rem 0;">
-    <h1 style="font-size: 3rem; color: #dce320; margin-bottom: 1rem;">
-        <span style="transform: rotate(180deg); display: inline-block;">🎧</span> PeePit
-    </h1>
-    <p style="font-size: 1.5rem; color: #555; margin: 0.5rem 0;">
-        www.peepit.io
-    </p>
-    <p style="font-size: 1.5rem; color: #555; margin: 0.5rem 0;">
-        Turns your PDF to MP3 🎧
-    </p>
-</div>
-""", unsafe_allow_html=True)
+    st.title("Peepit Audiobook")
 
-    # Sidebar
-    tts_lang = st.sidebar.selectbox("Speaker Language", list(TTS_LANGUAGES.keys()), index=0)
-    tts_lang_code = TTS_LANGUAGES[tts_lang]
+    pdf_file = st.file_uploader("Upload a PDF file", type=["pdf"])
 
-    uploaded_file = st.file_uploader("📤 Upload PDF", type=["pdf"])
-    url_link = st.text_input("🔗 Optional: Public URL to the document", placeholder="https://www.peepit.io/example.pdf")
+    col1, col2 = st.columns(2)
+    with col1:
+        content_lang = st.selectbox("PDF Content Language", options=["en", "fr", "ar", "de", "it", "es", "zh-cn"])
+    with col2:
+        audio_lang = st.selectbox("Audio Output Language", options=["en", "fr", "ar", "de", "it", "es", "zh-cn"])
 
-    pdf_path = None
-    if uploaded_file:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-            tmp.write(uploaded_file.getvalue())
-            pdf_path = tmp.name
+    keywords = st.text_input("Enter keywords to highlight (comma-separated):", value="")
+    keyword_list = [word.strip() for word in keywords.split(",") if word.strip()]
 
-        with pdfplumber.open(pdf_path) as pdf:
-            total_pages = len(pdf.pages)
-            selected_pages = st.multiselect("Select pages to process", list(range(1, total_pages + 1)), default=[1])
+    if pdf_file:
+        pdf_bytes = pdf_file.read()
+        extracted_text = extract_text_from_pdf(io.BytesIO(pdf_bytes), content_lang)
 
-        if not selected_pages:
-            st.error("Please select at least one valid page")
-            return
+        if content_lang == 'ar':
+            extracted_text = clean_ocr_text(extracted_text)
+            try:
+                reshaped = arabic_reshaper.reshape(extracted_text)
+                display_text = get_display(reshaped)
+            except Exception:
+                display_text = get_display(extracted_text)
+        else:
+            display_text = extracted_text
 
-        with st.spinner("🔍 Analyzing document..."):
-            full_text, ocr_pages = extract_text_from_pdf(pdf_path, selected_pages)
-            if not full_text:
-                st.error("No extractable text found")
-                return
+        highlighted_text, matched_keywords = extract_and_highlight_text(display_text, keyword_list, content_lang)
 
-            content_lang = detect_content_language(full_text)
-            if content_lang not in TESSERACT_LANG_MAP:
-                st.warning(f"Unsupported content language detected: {content_lang}", icon="⚠️")
+        st.markdown("### Extracted Text with Highlighted Keywords")
+        st.markdown(highlighted_text)
 
-            col_left, col_right = st.columns(2)
+        if extracted_text:
+            tts = gTTS(text=extracted_text, lang=audio_lang)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmpfile:
+                tts.save(tmpfile.name)
+                st.audio(tmpfile.name, format="audio/mp3")
+        else:
+            st.warning("No text found in the PDF.")
 
-            with col_left:
-                with st.expander("📜 Extracted Text", expanded=True):
-                    search_term = st.text_input("🔎 Search within text", "")
-                    show_ocr = st.checkbox("👁️ Show OCR text", value=True)
-
-                    filtered_text = full_text
-                    if not show_ocr and ocr_pages:
-                        # Remove OCR page blocks
-                        filtered_text = ""
-                        pattern = r"--- Page (\d+).*?(?=(--- Page |\Z))"
-                        matches = re.findall(pattern, full_text, re.DOTALL)
-                        # re.findall returns list of tuples with page number and content
-                        # Actually fix to capture content properly:
-                        # Use re.finditer for full blocks extraction
-                        filtered_text = ""
-                        for match in re.finditer(r"(--- Page (\d+).*?)(?=--- Page \d+|\Z)", full_text, re.DOTALL):
-                            block = match.group(1)
-                            page_num = int(re.search(r"--- Page (\d+)", block).group(1))
-                            if page_num not in ocr_pages:
-                                filtered_text += block + "\n\n"
-
-                    if search_term:
-                        filtered_text = re.sub(
-                            f"(?i)({re.escape(search_term)})",
-                            r"<mark>\1</mark>",
-                            filtered_text,
-                            flags=re.DOTALL,
-                        )
-
-                    text_class = "rtl-text" if content_lang == 'ar' else ""
-                    display_text = get_display(filtered_text) if content_lang == 'ar' else filtered_text
-
-                    st.markdown(f"""
-                    <div class="text-container {text_class}">
-                        {display_text.replace("\n", "<br>")}
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    # Download OCR/Text as PDF
-                    if st.button("📄 Export Extracted Text as PDF"):
+if __name__ == "__main__":
+    main()
