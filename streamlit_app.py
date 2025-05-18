@@ -146,14 +146,18 @@ def export_text_to_pdf(text):
 # --- MAIN APP ---
 def main():
     st.markdown("""
-    <h1 style="text-align: center; font-family: 'Segoe UI'; margin: 8rem 0;">
-        <span style="transform: rotate(180deg); display: inline-block;">🎧</span> 
-        PeePit
+<div style="text-align: center; font-family: 'Segoe UI'; margin: 8rem 0;">
+    <h1 style="font-size: 3rem; color: #4CAF50; margin-bottom: 1rem;">
+        <span style="transform: rotate(180deg); display: inline-block;">🎧</span> PeePit
     </h1>
-    <div style="text-align: center; margin-bottom: 2rem;">
+    <p style="font-size: 1.5rem; color: #555; margin: 0.5rem 0;">
+        www.peepit.io
+    </p>
+    <p style="font-size: 1.5rem; color: #2196F3; margin: 0.5rem 0;">
         Turns your PDF to MP3 🎧
-    </div>
-    """, unsafe_allow_html=True)
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
     # Sidebar
     tts_lang = st.sidebar.selectbox("Speaker Language", list(TTS_LANGUAGES.keys()), index=0)
