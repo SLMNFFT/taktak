@@ -10,6 +10,8 @@ import io
 from gtts import gTTS
 from bidi.algorithm import get_display
 from langdetect import detect, LangDetectException
+
+# NEW: Additional imports
 from pdf2image import convert_from_path
 import pytesseract
 
@@ -144,25 +146,21 @@ def export_text_to_pdf(text):
 # --- MAIN APP ---
 def main():
     st.markdown("""
-<div style="text-align: center; font-family: 'Segoe UI'; margin: 8rem 0;">
-    <h1 style="font-size: 3rem; color: #dce320; margin-bottom: 1rem;">
-        <span style="transform: rotate(180deg); display: inline-block;">🎧</span> PeePit
+    <h1 style="text-align: center; font-family: 'Segoe UI'; margin: 2rem 0;">
+        <span style="transform: rotate(180deg); display: inline-block;">🎧</span> 
+        PeePit
     </h1>
-    <p style="font-size: 1.5rem; color: #555; margin: 0.5rem 0;">
-        www.peepit.io
-    </p>
-    <p style="font-size: 1.5rem; color: #555; margin: 0.5rem 0;">
+    <div style="text-align: center; margin-bottom: 2rem;">
         Turns your PDF to MP3 🎧
-    </p>
-</div>
-""", unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
 
     # Sidebar
     tts_lang = st.sidebar.selectbox("Speaker Language", list(TTS_LANGUAGES.keys()), index=0)
     tts_lang_code = TTS_LANGUAGES[tts_lang]
 
     uploaded_file = st.file_uploader("📤 Upload PDF", type=["pdf"])
-    url_link = st.text_input("🔗 Optional: Public URL to the document", placeholder="https://www.peepit.io/example.pdf")
+    url_link = st.text_input("🔗 Optional: Public URL to the document", placeholder="https://example.com/your-doc")
 
     pdf_path = None
     if uploaded_file:
