@@ -11,3 +11,4 @@ langdetect==1.0.9
 protobuf==4.25.3
 markdown-it-py==2.2.0
 rich==13.7.0
+PyPDF2
