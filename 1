@@ -10,8 +10,6 @@ import io
 from gtts import gTTS
 from bidi.algorithm import get_display
 from langdetect import detect, LangDetectException
-
-# NEW: Additional imports
 from pdf2image import convert_from_path
 import pytesseract
 
