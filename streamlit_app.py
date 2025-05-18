@@ -146,7 +146,7 @@ def export_text_to_pdf(text):
 # --- MAIN APP ---
 def main():
     st.markdown("""
-    <h1 style="text-align: center; font-family: 'Segoe UI'; margin: 5rem 0;">
+    <h1 style="text-align: center; font-family: 'Segoe UI'; margin: 8rem 0;">
         <span style="transform: rotate(180deg); display: inline-block;">🎧</span> 
         PeePit
     </h1>
