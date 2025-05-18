@@ -1,9 +1,12 @@
 import streamlit as st
 import re
 import tempfile
+import base64
 import pdfplumber
 from pypdf import PdfReader
+from PIL import Image
 from fpdf import FPDF
+import io
 from gtts import gTTS
 from bidi.algorithm import get_display
 from langdetect import detect, LangDetectException
@@ -57,7 +60,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Language config
+# Language Config
 TTS_LANGUAGES = {
     "English 🇺🇸": "en",
     "Arabic 🇸🇦": "ar",
@@ -138,22 +141,28 @@ def export_text_to_pdf(text):
     pdf.output(temp_path)
     return temp_path
 
+# --- MAIN APP ---
 def main():
     st.markdown("""
-    <h1 style="text-align: center; font-family: 'Segoe UI'; margin: 2rem 0;">
-        <span style="transform: rotate(180deg); display: inline-block;">🎧</span> 
-        PeePit
+<div style="text-align: center; font-family: 'Segoe UI'; margin: 8rem 0;">
+    <h1 style="font-size: 3rem; color: #dce320; margin-bottom: 1rem;">
+        <span style="transform: rotate(180deg); display: inline-block;">🎧</span> PeePit
     </h1>
-    <div style="text-align: center; margin-bottom: 2rem;">
+    <p style="font-size: 1.5rem; color: #555; margin: 0.5rem 0;">
+        www.peepit.io
+    </p>
+    <p style="font-size: 1.5rem; color: #555; margin: 0.5rem 0;">
         Turns your PDF to MP3 🎧
-    </div>
-    """, unsafe_allow_html=True)
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
+    # Sidebar
     tts_lang = st.sidebar.selectbox("Speaker Language", list(TTS_LANGUAGES.keys()), index=0)
     tts_lang_code = TTS_LANGUAGES[tts_lang]
 
     uploaded_file = st.file_uploader("📤 Upload PDF", type=["pdf"])
-    url_link = st.text_input("🔗 Optional: Public URL to the document", placeholder="https://example.com/your-doc")
+    url_link = st.text_input("🔗 Optional: Public URL to the document", placeholder="https://www.peepit.io/example.pdf")
 
     pdf_path = None
     if uploaded_file:
@@ -188,14 +197,11 @@ def main():
 
                     filtered_text = full_text
                     if not show_ocr and ocr_pages:
-                        # Remove OCR sections if not showing OCR
-                        filtered_text = ""
-                        # Split by pages and skip OCR pages
-                        sections = re.split(r"(--- Page \d+.*?---)", full_text)
-                        # Simple filtering to exclude OCR page segments
-                        for section in sections:
-                            if not any(f"Page {p} (OCR)" in section for p in ocr_pages):
-                                filtered_text += section
+                        pattern = r"--- Page (\d+).*?(?=(--- Page |\Z))"
+                        filtered = re.findall(pattern, full_text, re.DOTALL)
+                        filtered_text = "\n\n".join(
+                            section for section, _ in filtered if int(section) not in ocr_pages
+                        )
 
                     if search_term:
                         filtered_text = re.sub(
@@ -214,6 +220,7 @@ def main():
                     </div>
                     """, unsafe_allow_html=True)
 
+                    # Download OCR/Text as PDF
                     if st.button("📄 Export Extracted Text as PDF"):
                         pdf_export = export_text_to_pdf(filtered_text)
                         with open(pdf_export, "rb") as f:
@@ -245,7 +252,13 @@ def main():
                                     </div>
                                     """, unsafe_allow_html=True)
 
+            # Visual preview
             with st.expander("🖼️ Page Previews", expanded=False):
-                try:
-                    images = convert_from_path(pdf_path, dpi=100, first_page=min(selected_pages), last_page=max(selected_pages))
-                    for
+                images = convert_from_path(pdf_path, dpi=100, first_page=min(selected_pages), last_page=max(selected_pages))
+                for i, img in zip(selected_pages, images):
+                    st.image(img, caption=f"Page {i}", use_column_width=True)
+
+if __name__ == "__main__":
+    main()
+
+
