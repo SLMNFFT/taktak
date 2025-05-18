@@ -153,7 +153,7 @@ def main():
     <p style="font-size: 1.5rem; color: #555; margin: 0.5rem 0;">
         www.peepit.io
     </p>
-    <p style="font-size: 1.5rem; color: #2196F3; margin: 0.5rem 0;">
+    <p style="font-size: 1.5rem; color: #555; margin: 0.5rem 0;">
         Turns your PDF to MP3 🎧
     </p>
 </div>
