@@ -5,6 +5,7 @@ ENV PYTHONUNBUFFERED=1
 
 # System dependencies
 RUN apt-get update && apt-get install -y \
+    arabic-reshaper python-bidi
     tesseract-ocr \
     tesseract-ocr-eng \
     tesseract-ocr-ara \
