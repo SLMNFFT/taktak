@@ -148,10 +148,10 @@ def main():
     <h1 style="font-size: 3rem; color: #dce320; margin-bottom: 1rem;">
         <span style="transform: rotate(180deg); display: inline-block;">🎧</span> PeePit
     </h1>
-    <p style="font-size: 1.5rem; color: #555; margin: 0.5rem 0;">
+    <p style="font-size: 1.5rem; color: #555; margin: 1rem 0;">
         www.peepit.io
     </p>
-    <p style="font-size: 1.5rem; color: #555; margin: 0.5rem 0;">
+    <p style="font-size: 1.5rem; color: #555; margin: 1rem 0;">
         Turns your PDF to MP3 🎧
     </p>
 </div>
