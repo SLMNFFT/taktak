@@ -160,7 +160,7 @@ if "uploaded_file" not in st.session_state:
 if "selected_files" not in st.session_state:
     st.session_state.selected_files = []
 if "folder_path" not in st.session_state:
-    st.session_state.folder_path = r"C:\Users\Scarl\Desktop\pdf\pdf_documents"
+    st.session_state.folder_path = r"YourFolderPath"
 
 # === Helper Functions ===
 def play_gtts(text, lang_code="en"):
